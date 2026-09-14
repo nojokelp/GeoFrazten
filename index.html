@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Geotrivia Rangliste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase (compat SDK - works without a build step) -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
+
+<style>
+  :root{
+    --bg:#0E2B33;
+    --bg-alt:#123640;
+    --bg-alt2:#0A222A;
+    --paper:#F3ECD8;
+    --paper-dim:#EAE1C7;
+    --ink:#20291F;
+    --ink-soft:#4B5346;
+    --ink-inv:#F3ECD8;
+    --ink-inv-soft:#C9D6CE;
+    --brass:#C9A24B;
+    --brass-dim:#9C7E3C;
+    --teal:#3E8E7E;
+    --brick:#A8402E;
+    --line:rgba(32,41,31,0.16);
+    --line-dark:rgba(243,236,216,0.16);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(201,162,75,0.10), transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(62,142,126,0.10), transparent 45%);
+    color:var(--ink-inv);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 0 64px;}
+
+  header{padding:28px 20px 18px;border-bottom:1px solid var(--line-dark);}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand svg{flex:none;}
+  .brand h1{
+    font-family:'Fraunces', serif;font-weight:600;
+    font-size:clamp(24px,6vw,30px);margin:0;letter-spacing:0.2px;color:var(--ink-inv);
+  }
+  .brand p{margin:2px 0 0;font-size:13px;color:var(--ink-inv-soft);}
+  .share-note{
+    margin:14px 0 0;font-size:12.5px;line-height:1.5;color:var(--ink-inv-soft);
+    border-left:2px solid var(--brass-dim);padding-left:10px;
+  }
+
+  #connBanner{
+    display:none;margin:0;padding:10px 20px;font-size:12.5px;
+    background:var(--bg-alt2);color:var(--ink-inv-soft);border-bottom:1px solid var(--line-dark);
+  }
+  #connBanner.show{display:block;}
+  #connBanner.err{color:#F1B8AC;}
+
+  nav.tabs{
+    display:flex;gap:4px;overflow-x:auto;padding:10px 16px;
+    background:var(--bg-alt);border-bottom:1px solid var(--line-dark);
+    position:sticky;top:0;z-index:5;scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    flex:none;font-family:'IBM Plex Sans', sans-serif;font-size:13.5px;font-weight:500;
+    padding:8px 14px;border:none;border-radius:999px;background:transparent;
+    color:var(--ink-inv-soft);cursor:pointer;transition:background .15s ease, color .15s ease;white-space:nowrap;
+  }
+  nav.tabs button.active{background:var(--brass);color:#26200D;}
+  nav.tabs button:not(.active):hover{background:rgba(243,236,216,0.08);color:var(--ink-inv);}
+
+  main{padding:18px 16px 8px;}
+  section.tabpanel{display:none;}
+  section.tabpanel.active{display:block;}
+
+  h2.section-title{font-family:'Fraunces', serif;font-weight:600;font-size:19px;margin:26px 0 10px;color:var(--ink-inv);}
+  h2.section-title:first-child{margin-top:4px;}
+  .game-tagline{margin:-6px 0 16px;font-size:12.5px;color:var(--ink-inv-soft);}
+
+  .hero{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:20px 18px;margin-top:6px;}
+  .hero .eyebrow{font-size:12px;color:var(--ink-soft);margin:0 0 6px;}
+  .hero .leader-name{font-family:'Fraunces', serif;font-weight:700;font-size:clamp(26px,8vw,34px);margin:0;color:var(--brass-dim);}
+  .hero .leader-meta{font-size:13px;color:var(--ink-soft);margin:6px 0 0;}
+  .hero .empty{font-size:14px;color:var(--ink-soft);}
+
+  .crown-row{display:flex;gap:10px;overflow-x:auto;margin-top:14px;padding-bottom:4px;scrollbar-width:none;}
+  .crown-row::-webkit-scrollbar{display:none;}
+  .crown-card{flex:none;width:132px;background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:12px;}
+  .crown-card .g-label{font-size:11px;color:var(--ink-soft);margin:0 0 4px;}
+  .crown-card .g-name{font-family:'Fraunces',serif;font-weight:600;font-size:15px;margin:0;}
+  .crown-card .g-avg{font-size:12px;color:var(--teal);margin:3px 0 0;}
+  .crown-card .g-empty{font-size:12px;color:var(--ink-soft);}
+
+  details.info{margin-top:16px;background:transparent;border:1px solid var(--line-dark);border-radius:var(--radius);padding:2px 14px;}
+  details.info summary{cursor:pointer;font-size:13px;padding:10px 0;color:var(--ink-inv-soft);list-style:none;}
+  details.info summary::-webkit-details-marker{display:none;}
+  details.info summary:before{content:"▾ ";color:var(--brass);}
+  details.info p{font-size:12.5px;line-height:1.6;color:var(--ink-inv-soft);margin:0 0 12px;}
+
+  ol.board{list-style:none;margin:0;padding:0;background:var(--paper);border-radius:var(--radius);overflow:hidden;}
+  ol.board li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink);}
+  ol.board li:last-child{border-bottom:none;}
+  .rank-num{font-family:'Fraunces', serif;font-weight:600;font-size:19px;width:30px;color:var(--ink-soft);flex:none;}
+  ol.board li:nth-child(1) .rank-num{color:var(--brass-dim);}
+  .rank-body{flex:1;min-width:0;}
+  .rank-body .p-name{font-weight:600;font-size:14.5px;}
+  .rank-body .p-meta{font-size:12px;color:var(--ink-soft);margin-top:1px;}
+  .rank-val{font-size:14px;font-weight:600;color:var(--teal);flex:none;text-align:right;}
+  .medal{margin-left:4px;}
+  .empty-note{padding:16px 14px;background:var(--paper);border-radius:var(--radius);color:var(--ink-soft);font-size:13.5px;}
+
+  form.entry-form{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field .hint{font-size:11.5px;color:var(--ink-soft);margin-top:4px;font-weight:400;}
+  input[type=text],input[type=number],input[type=date],select{
+    width:100%;font-family:'IBM Plex Sans',sans-serif;font-size:15px;padding:10px 11px;
+    border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);
+  }
+  input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px;}
+  .checkbox-row{display:flex;align-items:center;gap:8px;}
+  .checkbox-row input{width:auto;}
+  .checkbox-row label{margin:0;font-weight:500;color:var(--ink);}
+
+  .file-drop{border:1.5px dashed var(--line);border-radius:8px;padding:14px;text-align:center;cursor:pointer;background:rgba(32,41,31,0.02);}
+  .file-drop input{display:none;}
+  .file-drop .fd-label{font-size:13px;color:var(--ink-soft);}
+  .file-drop.has-file{border-color:var(--teal);}
+  .preview-thumb{display:block;max-width:100%;max-height:130px;margin:10px auto 0;border-radius:6px;}
+
+  button.submit-btn{
+    width:100%;background:var(--ink);color:var(--paper);border:none;border-radius:8px;padding:13px;
+    font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:600;cursor:pointer;margin-top:4px;
+  }
+  button.submit-btn:disabled{opacity:0.55;cursor:default;}
+  button.submit-btn:not(:disabled):active{transform:translateY(1px);}
+
+  .msg{font-size:13px;padding:9px 11px;border-radius:6px;margin-bottom:12px;}
+  .msg.error{background:rgba(168,64,46,0.12);color:var(--brick);}
+  .msg.success{background:rgba(62,142,126,0.14);color:#1F5B4E;}
+
+  ul.history{list-style:none;margin:0;padding:0;}
+  ul.history li{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:11px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .hist-body{flex:1;min-width:0;}
+  .hist-body .h-top{display:flex;justify-content:space-between;gap:8px;}
+  .hist-body .h-name{font-weight:600;font-size:14px;}
+  .hist-body .h-date{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;}
+  .hist-body .h-result{font-size:13px;color:var(--teal);margin-top:2px;font-weight:500;}
+  .hist-actions{display:flex;gap:6px;flex:none;}
+  .icon-btn{border:1px solid var(--line);background:#fff;border-radius:6px;width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);}
+  .icon-btn.danger{color:var(--brick);}
+  .icon-btn.confirming{background:var(--brick);color:#fff;border-color:var(--brick);font-size:10.5px;font-weight:600;width:auto;padding:0 8px;}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(10,20,20,0.82);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;}
+  .modal-backdrop.open{display:flex;}
+  .modal-backdrop img{max-width:100%;max-height:80vh;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.5);}
+  .modal-close{position:absolute;top:18px;right:18px;background:var(--paper);color:var(--ink);border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;}
+  .modal-loading{color:var(--ink-inv-soft);font-size:14px;}
+
+  footer{text-align:center;padding:20px;font-size:11.5px;color:var(--ink-inv-soft);}
+
+  .config-warning{
+    margin:20px 16px;padding:16px;border-radius:10px;background:#4a2320;color:#F6D9D2;
+    font-size:13px;line-height:1.6;
+  }
+  .config-warning code{background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="17" stroke="#C9A24B" stroke-width="1.4"/>
+        <path d="M20 5 L20 35 M5 20 L35 20" stroke="#C9A24B" stroke-width="1" opacity="0.55"/>
+        <path d="M20 8 L23.5 20 L20 32 L16.5 20 Z" fill="#C9A24B"/>
+        <circle cx="20" cy="20" r="2.2" fill="#0E2B33"/>
+      </svg>
+      <div>
+        <h1>Geotrivia Rangliste</h1>
+        <p>GeoRankle · GeoDecide · Geodle · GeoConnections</p>
+      </div>
+    </div>
+    <p class="share-note">Alle Einträge und Screenshots liegen in einer gemeinsamen Datenbank &ndash; jede Person, die diese Seite öffnet, sieht dieselbe Rangliste in Echtzeit.</p>
+  </header>
+
+  <p id="connBanner"></p>
+
+  <nav class="tabs" id="tabNav">
+    <button data-tab="gesamt" class="active">Gesamt</button>
+    <button data-tab="georankle">GeoRankle</button>
+    <button data-tab="geodecide">GeoDecide</button>
+    <button data-tab="geodle">Geodle</button>
+    <button data-tab="geoconnections">GeoConnections</button>
+  </nav>
+
+  <main id="main">
+
+    <section class="tabpanel active" data-panel="gesamt">
+      <h2 class="section-title">Gesamtwertung</h2>
+      <div class="hero" id="heroBox"><p class="empty">Lade Daten &hellip;</p></div>
+      <div class="crown-row" id="crownRow"></div>
+      <details class="info">
+        <summary>Wie wird die Gesamtwertung berechnet?</summary>
+        <p>
+          Die vier Spiele haben unterschiedliche Skalen (Punkte, Versuche, Fehler, Länderserie),
+          darum werden sie nicht direkt addiert. Stattdessen bekommt in jedem Spiel Platz 1 die
+          meisten Rangpunkte, der letzte Platz 1 Rangpunkt. Die Gesamtwertung ist der Durchschnitt
+          der Rangpunkte über alle Spiele, die eine Person bereits gespielt hat.
+        </p>
+      </details>
+      <h2 class="section-title">Rangliste</h2>
+      <div id="overallBoard"><p class="empty-note">Lade Rangliste &hellip;</p></div>
+    </section>
+
+    <section class="tabpanel" data-panel="georankle">
+      <h2 class="section-title">GeoRankle eintragen</h2>
+      <p class="game-tagline">Acht Länder, acht Kategorien &ndash; bis zu 100 Punkte pro Runde, maximal 800 Punkte gesamt.</p>
+      <div class="msg-slot" data-slot="georankle"></div>
+      <form class="entry-form" id="form-georankle" data-game="georankle">
+        <div class="field"><label for="gr-player">Name</label>
+          <input type="text" id="gr-player" name="player" list="playersList" placeholder="Dein Name" autocomplete="off"></div>
+        <div class="field"><label for="gr-date">Datum</label>
+          <input type="date" id="gr-date" name="date"></div>
+        <div class="field"><label for="gr-points">Punkte</label>
+          <input type="number" id="gr-points" name="points" min="0" max="800" step="1" placeholder="0–800">
+          <p class="hint">Steht am Ende der Runde auf dem Ergebnisbildschirm.</p></div>
+        <div class="field"><label>Screenshot vom Ergebnis (Pflicht)</label>
+          <div class="file-drop" data-drop="georankle">
+            <span class="fd-label">Tippen, um ein Bild auszuwählen</span>
+            <input type="file" accept="image/*" name="screenshot"></div></div>
+        <button type="submit" class="submit-btn">Ergebnis speichern</button>
+      </form>
+      <h2 class="section-title">Rangliste</h2>
+      <div id="board-georankle"><p class="empty-note">Noch keine Einträge.</p></div>
+      <h2 class="section-title">Verlauf</h2>
+      <ul class="history" id="history-georankle"></ul>
+    </section>
+
+    <section class="tabpanel" data-panel="geodecide">
+      <h2 class="section-title">GeoDecide eintragen</h2>
+      <p class="game-tagline">Höher oder niedriger? Ein falscher Tipp beendet den Lauf &ndash; gezählt wird die Länge der Serie.</p>
+      <div class="msg-slot" data-slot="geodecide"></div>
+      <form class="entry-form" id="form-geodecide" data-game="geodecide">
+        <div class="field"><label for="gd-player">Name</label>
+          <input type="text" id="gd-player" name="player" list="playersList" placeholder="Dein Name" autocomplete="off"></div>
+        <div class="field"><label for="gd-date">Datum</label>
+          <input type="date" id="gd-date" name="date"></div>
+        <div class="field"><label for="gd-streak">Richtig in Folge</label>
+          <input type="number" id="gd-streak" name="streak" min="0" step="1" placeholder="z. B. 7">
+          <p class="hint">Anzahl Länder, die du richtig eingeordnet hast, bevor der Lauf endete.</p></div>
+        <div class="field"><label>Screenshot vom Ergebnis (Pflicht)</label>
+          <div class="file-drop" data-drop="geodecide">
+            <span class="fd-label">Tippen, um ein Bild auszuwählen</span>
+            <input type="file" accept="image/*" name="screenshot"></div></div>
+        <button type="submit" class="submit-btn">Ergebnis speichern</button>
+      </form>
+      <h2 class="section-title">Rangliste</h2>
+      <div id="board-geodecide"><p class="empty-note">Noch keine Einträge.</p></div>
+      <h2 class="section-title">Verlauf</h2>
+      <ul class="history" id="history-geodecide"></ul>
+    </section>
+
+    <section class="tabpanel" data-panel="geodle">
+      <h2 class="section-title">Geodle eintragen</h2>
+      <p class="game-tagline">Das geheime Land erraten &ndash; gezählt wird die Anzahl der Versuche (üblicherweise max. 6).</p>
+      <div class="msg-slot" data-slot="geodle"></div>
+      <form class="entry-form" id="form-geodle" data-game="geodle">
+        <div class="field"><label for="gdl-player">Name</label>
+          <input type="text" id="gdl-player" name="player" list="playersList" placeholder="Dein Name" autocomplete="off"></div>
+        <div class="field"><label for="gdl-date">Datum</label>
+          <input type="date" id="gdl-date" name="date"></div>
+        <div class="field"><label for="gdl-guesses">Versuche bis zur Lösung</label>
+          <select id="gdl-guesses" name="guesses">
+            <option value="">Bitte wählen</option>
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            <option value="X">Nicht gelöst</option>
+          </select></div>
+        <div class="field"><label>Screenshot vom Ergebnis (Pflicht)</label>
+          <div class="file-drop" data-drop="geodle">
+            <span class="fd-label">Tippen, um ein Bild auszuwählen</span>
+            <input type="file" accept="image/*" name="screenshot"></div></div>
+        <button type="submit" class="submit-btn">Ergebnis speichern</button>
+      </form>
+      <h2 class="section-title">Rangliste</h2>
+      <div id="board-geodle"><p class="empty-note">Noch keine Einträge.</p></div>
+      <h2 class="section-title">Verlauf</h2>
+      <ul class="history" id="history-geodle"></ul>
+    </section>
+
+    <section class="tabpanel" data-panel="geoconnections">
+      <h2 class="section-title">GeoConnections eintragen</h2>
+      <p class="game-tagline">16 Länder, vier versteckte Gruppen &ndash; gezählt werden die Fehlversuche bis zur Lösung.</p>
+      <div class="msg-slot" data-slot="geoconnections"></div>
+      <form class="entry-form" id="form-geoconnections" data-game="geoconnections">
+        <div class="field"><label for="gc-player">Name</label>
+          <input type="text" id="gc-player" name="player" list="playersList" placeholder="Dein Name" autocomplete="off"></div>
+        <div class="field"><label for="gc-date">Datum</label>
+          <input type="date" id="gc-date" name="date"></div>
+        <div class="field"><label for="gc-mistakes">Fehlversuche</label>
+          <input type="number" id="gc-mistakes" name="mistakes" min="0" step="1" placeholder="0 = perfekt gelöst"></div>
+        <div class="field"><div class="checkbox-row">
+          <input type="checkbox" id="gc-solved" name="solved" checked>
+          <label for="gc-solved">Rätsel am Ende vollständig gelöst</label></div></div>
+        <div class="field"><label>Screenshot vom Ergebnis (Pflicht)</label>
+          <div class="file-drop" data-drop="geoconnections">
+            <span class="fd-label">Tippen, um ein Bild auszuwählen</span>
+            <input type="file" accept="image/*" name="screenshot"></div></div>
+        <button type="submit" class="submit-btn">Ergebnis speichern</button>
+      </form>
+      <h2 class="section-title">Rangliste</h2>
+      <div id="board-geoconnections"><p class="empty-note">Noch keine Einträge.</p></div>
+      <h2 class="section-title">Verlauf</h2>
+      <ul class="history" id="history-geoconnections"></ul>
+    </section>
+
+  </main>
+
+  <footer>Ergebnisse & Screenshots liegen in Firebase (Firestore + Storage) &ndash; unabhängig von dieser Seite gehostet.</footer>
+</div>
+
+<datalist id="playersList"></datalist>
+
+<div class="modal-backdrop" id="modal">
+  <button class="modal-close" id="modalClose">&times;</button>
+  <div id="modalContent" class="modal-loading">Lade Screenshot &hellip;</div>
+</div>
+
+<script>
+/* =========================================================================
+   1) FIREBASE-KONFIGURATION — HIER ANPASSEN
+   Trage hier die Werte aus deinem eigenen Firebase-Projekt ein
+   (Projekteinstellungen -> Allgemein -> "Meine Apps" -> Web-App).
+   Siehe README.md für die Schritt-für-Schritt-Anleitung.
+   ========================================================================= */
+  const firebaseConfig = {
+    apiKey: "DEIN_API_KEY",
+    authDomain: "DEIN_PROJEKT.firebaseapp.com",
+    projectId: "DEIN_PROJEKT",
+    storageBucket: "DEIN_PROJEKT.appspot.com",
+    messagingSenderId: "DEINE_SENDER_ID",
+    appId: "DEINE_APP_ID"
+  };
+/* ========================================================================= */
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  var DIRECTION = { georankle:'higher', geodecide:'higher', geodle:'lower', geoconnections:'lower' };
+  var LABELS = { georankle:'GeoRankle', geodecide:'GeoDecide', geodle:'Geodle', geoconnections:'GeoConnections' };
+  var GAMES = ['georankle','geodecide','geodle','geoconnections'];
+
+  var entries = [];
+  var confirmTimers = {};
+  var db, storage, auth;
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function todayStr(){
+    var d = new Date();
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var day = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear()+'-'+m+'-'+day;
+  }
+
+  function fmtDate(iso){
+    if(!iso) return '';
+    var p = iso.split('-');
+    if(p.length!==3) return iso;
+    return p[2]+'.'+p[1]+'.'+p[0];
+  }
+
+  function setBanner(text, isErr){
+    var el = document.getElementById('connBanner');
+    if(!text){ el.classList.remove('show'); return; }
+    el.textContent = text;
+    el.classList.add('show');
+    el.classList.toggle('err', !!isErr);
+  }
+
+  /* ---------- Firebase init ---------- */
+  function configLooksUnset(){
+    return firebaseConfig.apiKey === 'DEIN_API_KEY' || !firebaseConfig.apiKey;
+  }
+
+  function showConfigWarning(){
+    var div = document.createElement('div');
+    div.className = 'config-warning';
+    div.innerHTML =
+      'Diese Seite ist noch nicht mit einer Firebase-Datenbank verbunden. ' +
+      'Trage deine eigenen Werte in <code>firebaseConfig</code> am Anfang des ' +
+      '<code>&lt;script&gt;</code>-Blocks in <code>index.html</code> ein. ' +
+      'Schritt-für-Schritt-Anleitung: siehe <code>README.md</code>.';
+    document.querySelector('.wrap').insertBefore(div, document.getElementById('tabNav'));
+  }
+
+  function initFirebase(){
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    storage = firebase.storage();
+  }
+
+  function ensureAuth(){
+    return new Promise(function(resolve, reject){
+      var unsub = auth.onAuthStateChanged(function(user){
+        if(user){ unsub(); resolve(user); }
+      }, reject);
+      auth.signInAnonymously().catch(reject);
+    });
+  }
+
+  /* ---------- image compression ---------- */
+  function fileToCompressedBlob(file){
+    return new Promise(function(resolve,reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var w = img.width, h = img.height, maxDim = 1000;
+          if(w > maxDim || h > maxDim){
+            if(w >= h){ h = Math.round(h*maxDim/w); w = maxDim; }
+            else { w = Math.round(w*maxDim/h); h = maxDim; }
+          }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img,0,0,w,h);
+          canvas.toBlob(function(blob){
+            if(!blob){ reject(new Error('compress failed')); return; }
+            resolve(blob);
+          }, 'image/jpeg', 0.72);
+        };
+        img.onerror = function(){ reject(new Error('image decode failed')); };
+        img.src = e.target.result;
+      };
+      reader.onerror = function(){ reject(new Error('file read failed')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* ---------- scoring (unverändert) ---------- */
+  function numericFor(e){
+    switch(e.game){
+      case 'georankle': return e.raw.points;
+      case 'geodecide': return e.raw.streak;
+      case 'geodle': return e.raw.guesses === 'X' ? 7 : Number(e.raw.guesses);
+      case 'geoconnections': return e.raw.solved ? e.raw.mistakes : 50;
+    }
+  }
+
+  function displayFor(e){
+    switch(e.game){
+      case 'georankle': return e.raw.points + ' Punkte';
+      case 'geodecide': return e.raw.streak + ' Länder in Folge';
+      case 'geodle': return e.raw.guesses === 'X' ? 'X · nicht gelöst' : (e.raw.guesses + '/6 Versuche');
+      case 'geoconnections': return e.raw.solved ? (e.raw.mistakes + ' Fehlversuche') : ('nicht gelöst (' + e.raw.mistakes + ' Fehlversuche)');
+    }
+  }
+
+  function gameBoard(game){
+    var rows = entries.filter(function(e){ return e.game===game; });
+    var byPlayer = {};
+    rows.forEach(function(e){
+      var v = numericFor(e);
+      if(!byPlayer[e.player]) byPlayer[e.player] = {sum:0,count:0};
+      byPlayer[e.player].sum += v;
+      byPlayer[e.player].count += 1;
+    });
+    var list = Object.keys(byPlayer).map(function(player){
+      var d = byPlayer[player];
+      return { player: player, avg: d.sum/d.count, count: d.count };
+    });
+    var dir = DIRECTION[game];
+    list.sort(function(a,b){
+      var diff = dir === 'higher' ? (b.avg - a.avg) : (a.avg - b.avg);
+      if(Math.abs(diff) > 1e-9) return diff;
+      return a.player.localeCompare(b.player);
+    });
+    var rank = 0, prev = null;
+    list.forEach(function(item, i){
+      if(prev === null || Math.abs(item.avg - prev) > 1e-9){ rank = i+1; }
+      item.rank = rank;
+      prev = item.avg;
+    });
+    return list;
+  }
+
+  function overallData(){
+    var perGame = {};
+    var pointsByPlayer = {};
+    GAMES.forEach(function(g){
+      var board = gameBoard(g);
+      perGame[g] = board;
+      var n = board.length;
+      board.forEach(function(item){
+        var pts = n - item.rank + 1;
+        if(!pointsByPlayer[item.player]) pointsByPlayer[item.player] = {};
+        pointsByPlayer[item.player][g] = pts;
+      });
+    });
+    var overall = Object.keys(pointsByPlayer).map(function(player){
+      var map = pointsByPlayer[player];
+      var vals = Object.keys(map).map(function(k){ return map[k]; });
+      var avg = vals.reduce(function(a,b){return a+b;},0) / vals.length;
+      return { player: player, avgPoints: avg, gamesPlayed: vals.length };
+    });
+    overall.sort(function(a,b){
+      var diff = b.avgPoints - a.avgPoints;
+      if(Math.abs(diff) > 1e-9) return diff;
+      return a.player.localeCompare(b.player);
+    });
+    var rank = 0, prev = null;
+    overall.forEach(function(item,i){
+      if(prev === null || Math.abs(item.avgPoints - prev) > 1e-9){ rank = i+1; }
+      item.rank = rank;
+      prev = item.avgPoints;
+    });
+    return { overall: overall, perGame: perGame };
+  }
+
+  function medalFor(rank){
+    if(rank===1) return '🥇';
+    if(rank===2) return '🥈';
+    if(rank===3) return '🥉';
+    return '';
+  }
+
+  function computePlayers(){
+    var set = {};
+    entries.forEach(function(e){ set[e.player] = true; });
+    return Object.keys(set).sort(function(a,b){ return a.localeCompare(b); });
+  }
+
+  /* ---------- rendering (unverändert ggü. Artefakt-Version) ---------- */
+  function renderPlayersDatalist(){
+    var dl = document.getElementById('playersList');
+    dl.innerHTML = computePlayers().map(function(p){ return '<option value="'+escapeHtml(p)+'">'; }).join('');
+  }
+
+  function renderBoard(container, list, unitLabel){
+    if(list.length === 0){
+      container.innerHTML = '<p class="empty-note">Noch keine Einträge.</p>';
+      return;
+    }
+    container.innerHTML = '<ol class="board">' + list.map(function(item){
+      return '<li>' +
+        '<span class="rank-num">'+item.rank+'</span>' +
+        '<span class="rank-body"><span class="p-name">'+escapeHtml(item.player)+' <span class="medal">'+medalFor(item.rank)+'</span></span>' +
+        '<div class="p-meta">'+item.count+' Spiel'+(item.count===1?'':'e')+'</div></span>' +
+        '<span class="rank-val">'+item.avg.toFixed(1)+' '+unitLabel+'</span>' +
+      '</li>';
+    }).join('') + '</ol>';
+  }
+
+  function renderGesamt(){
+    var data = overallData();
+    var heroBox = document.getElementById('heroBox');
+    var crownRow = document.getElementById('crownRow');
+    var overallBoard = document.getElementById('overallBoard');
+
+    if(data.overall.length === 0){
+      heroBox.innerHTML = '<p class="eyebrow">Aktuelle Führung</p><p class="empty">Noch keine Ergebnisse eingetragen &ndash; leg als Erste:r los!</p>';
+    } else {
+      var leader = data.overall[0];
+      heroBox.innerHTML =
+        '<p class="eyebrow">Aktuell auf Platz 1 &ndash; gesamt</p>' +
+        '<p class="leader-name">'+escapeHtml(leader.player)+'</p>' +
+        '<p class="leader-meta">'+leader.avgPoints.toFixed(1)+' Ø Rangpunkte über '+leader.gamesPlayed+' Spiel'+(leader.gamesPlayed===1?'':'e')+'</p>';
+    }
+
+    crownRow.innerHTML = GAMES.map(function(g){
+      var board = data.perGame[g];
+      if(board.length === 0){
+        return '<div class="crown-card"><p class="g-label">'+LABELS[g]+'</p><p class="g-empty">noch offen</p></div>';
+      }
+      var top = board[0];
+      return '<div class="crown-card">' +
+        '<p class="g-label">👑 '+LABELS[g]+'</p>' +
+        '<p class="g-name">'+escapeHtml(top.player)+'</p>' +
+        '<p class="g-avg">Ø '+top.avg.toFixed(1)+'</p>' +
+      '</div>';
+    }).join('');
+
+    if(data.overall.length === 0){
+      overallBoard.innerHTML = '<p class="empty-note">Noch keine Rangliste vorhanden.</p>';
+    } else {
+      overallBoard.innerHTML = '<ol class="board">' + data.overall.map(function(item){
+        return '<li>' +
+          '<span class="rank-num">'+item.rank+'</span>' +
+          '<span class="rank-body"><span class="p-name">'+escapeHtml(item.player)+' <span class="medal">'+medalFor(item.rank)+'</span></span>' +
+          '<div class="p-meta">'+item.gamesPlayed+' von 4 Spielen</div></span>' +
+          '<span class="rank-val">'+item.avgPoints.toFixed(1)+' Pkt</span>' +
+        '</li>';
+      }).join('') + '</ol>';
+    }
+  }
+
+  function renderHistory(game){
+    var container = document.getElementById('history-'+game);
+    var rows = entries.filter(function(e){ return e.game===game; })
+      .slice()
+      .sort(function(a,b){ return b.ts - a.ts; });
+    if(rows.length === 0){ container.innerHTML = ''; return; }
+    container.innerHTML = rows.map(function(e){
+      return '<li>' +
+        '<div class="hist-body">' +
+          '<div class="h-top"><span class="h-name">'+escapeHtml(e.player)+'</span><span class="h-date">'+fmtDate(e.date)+'</span></div>' +
+          '<div class="h-result">'+displayFor(e)+'</div>' +
+        '</div>' +
+        '<div class="hist-actions">' +
+          '<button class="icon-btn" data-view="'+e.id+'" title="Screenshot ansehen">📷</button>' +
+          '<button class="icon-btn danger" data-del="'+e.id+'" title="Eintrag löschen">🗑</button>' +
+        '</div>' +
+      '</li>';
+    }).join('');
+  }
+
+  function renderGame(game){
+    var unit = { georankle:'Pkt', geodecide:'Ø Länder', geodle:'Ø Versuche', geoconnections:'Ø Fehler' }[game];
+    renderBoard(document.getElementById('board-'+game), gameBoard(game), unit);
+    renderHistory(game);
+  }
+
+  function renderAll(){
+    renderPlayersDatalist();
+    renderGesamt();
+    GAMES.forEach(renderGame);
+  }
+
+  /* ---------- messages ---------- */
+  function showMsg(game, type, text){
+    var slot = document.querySelector('.msg-slot[data-slot="'+game+'"]');
+    slot.innerHTML = '<div class="msg '+type+'">'+escapeHtml(text)+'</div>';
+    if(type === 'success'){
+      setTimeout(function(){ if(slot.firstChild) slot.innerHTML=''; }, 3500);
+    }
+  }
+  function clearMsg(game){
+    document.querySelector('.msg-slot[data-slot="'+game+'"]').innerHTML = '';
+  }
+
+  /* ---------- file drop UI ---------- */
+  function setupFileDrop(dropEl){
+    var input = dropEl.querySelector('input[type=file]');
+    var label = dropEl.querySelector('.fd-label');
+    var defaultLabel = label.textContent;
+    dropEl.addEventListener('click', function(){ input.click(); });
+    input.addEventListener('change', function(){
+      var existingThumb = dropEl.querySelector('.preview-thumb');
+      if(existingThumb) existingThumb.remove();
+      if(input.files && input.files[0]){
+        dropEl.classList.add('has-file');
+        label.textContent = input.files[0].name;
+        var img = document.createElement('img');
+        img.className = 'preview-thumb';
+        img.src = URL.createObjectURL(input.files[0]);
+        dropEl.appendChild(img);
+      } else {
+        dropEl.classList.remove('has-file');
+        label.textContent = defaultLabel;
+      }
+    });
+  }
+
+  function resetFileDrop(dropEl){
+    var thumb = dropEl.querySelector('.preview-thumb');
+    if(thumb) thumb.remove();
+    dropEl.classList.remove('has-file');
+    dropEl.querySelector('.fd-label').textContent = 'Tippen, um ein Bild auszuwählen';
+  }
+
+  /* ---------- submit ---------- */
+  async function handleSubmit(game, form){
+    clearMsg(game);
+    var name = form.player.value.trim();
+    var date = form.date.value;
+    var fileInput = form.querySelector('input[type=file]');
+    var file = fileInput.files[0];
+    var raw = null;
+
+    if(!name){ showMsg(game,'error','Bitte einen Namen angeben.'); return; }
+    if(!date){ showMsg(game,'error','Bitte ein Datum wählen.'); return; }
+
+    if(game === 'georankle'){
+      var pts = form.points.value;
+      if(pts === ''){ showMsg(game,'error','Bitte die Punktzahl eingeben.'); return; }
+      pts = Number(pts);
+      if(!Number.isFinite(pts) || pts < 0 || pts > 800 || Math.round(pts)!==pts){
+        showMsg(game,'error','Punkte müssen eine ganze Zahl zwischen 0 und 800 sein.'); return;
+      }
+      raw = { points: pts };
+    } else if(game === 'geodecide'){
+      var streak = form.streak.value;
+      if(streak === ''){ showMsg(game,'error','Bitte die Länge der Serie eingeben.'); return; }
+      streak = Number(streak);
+      if(!Number.isFinite(streak) || streak < 0 || Math.round(streak)!==streak){
+        showMsg(game,'error','Bitte eine gültige, positive ganze Zahl eingeben.'); return;
+      }
+      raw = { streak: streak };
+    } else if(game === 'geodle'){
+      var guesses = form.guesses.value;
+      if(guesses === ''){ showMsg(game,'error','Bitte die Anzahl Versuche wählen.'); return; }
+      raw = { guesses: guesses === 'X' ? 'X' : Number(guesses) };
+    } else if(game === 'geoconnections'){
+      var mistakes = form.mistakes.value;
+      if(mistakes === ''){ showMsg(game,'error','Bitte die Anzahl Fehlversuche eingeben.'); return; }
+      mistakes = Number(mistakes);
+      if(!Number.isFinite(mistakes) || mistakes < 0 || Math.round(mistakes)!==mistakes){
+        showMsg(game,'error','Bitte eine gültige, positive ganze Zahl eingeben.'); return;
+      }
+      raw = { mistakes: mistakes, solved: form.solved.checked };
+    }
+
+    if(!file){ showMsg(game,'error','Ein Screenshot ist Pflicht – bitte ein Bild vom Ergebnis auswählen.'); return; }
+
+    var btn = form.querySelector('button.submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Speichere …';
+    try{
+      var docRef = db.collection('entries').doc();
+      var id = docRef.id;
+      var blob = await fileToCompressedBlob(file);
+      var path = 'screenshots/' + id + '.jpg';
+      var storeRef = storage.ref().child(path);
+      await storeRef.put(blob, { contentType: 'image/jpeg' });
+      var url = await storeRef.getDownloadURL();
+
+      await docRef.set({
+        game: game,
+        player: name,
+        date: date,
+        raw: raw,
+        ts: Date.now(),
+        screenshotPath: path,
+        screenshotUrl: url
+      });
+
+      form.reset();
+      form.date.value = todayStr();
+      if(game === 'geoconnections') form.solved.checked = true;
+      resetFileDrop(form.querySelector('.file-drop'));
+      showMsg(game,'success','Ergebnis gespeichert.');
+      /* entries[] und die Anzeige aktualisieren sich automatisch über den
+         Firestore-Live-Listener (onSnapshot) - kein manueller Refresh nötig. */
+    }catch(err){
+      console.error(err);
+      showMsg(game,'error','Beim Speichern ist etwas schiefgelaufen: ' + (err && err.message ? err.message : 'unbekannter Fehler'));
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Ergebnis speichern';
+    }
+  }
+
+  /* ---------- delete (double-tap confirm) ---------- */
+  function handleDeleteClick(btn, id, path){
+    if(btn.classList.contains('confirming')){
+      clearTimeout(confirmTimers[id]);
+      deleteEntry(id, path);
+      return;
+    }
+    btn.classList.add('confirming');
+    btn.textContent = 'Löschen?';
+    confirmTimers[id] = setTimeout(function(){
+      btn.classList.remove('confirming');
+      btn.textContent = '🗑';
+    }, 3000);
+  }
+
+  async function deleteEntry(id, path){
+    try{
+      await db.collection('entries').doc(id).delete();
+      if(path){ await storage.ref().child(path).delete().catch(function(){}); }
+    }catch(err){
+      console.error(err);
+      alert('Löschen fehlgeschlagen: ' + (err && err.message ? err.message : ''));
+    }
+  }
+
+  /* ---------- screenshot modal ---------- */
+  var modal = document.getElementById('modal');
+  var modalContent = document.getElementById('modalContent');
+
+  function openScreenshot(url){
+    modal.classList.add('open');
+    if(!url){
+      modalContent.className = 'modal-loading';
+      modalContent.textContent = 'Screenshot konnte nicht geladen werden.';
+      return;
+    }
+    modalContent.className = '';
+    modalContent.innerHTML = '<img src="'+url+'" alt="Ergebnis-Screenshot">';
+  }
+  function closeModal(){ modal.classList.remove('open'); }
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
+
+  /* ---------- event delegation ---------- */
+  document.getElementById('main').addEventListener('click', function(e){
+    var viewBtn = e.target.closest('[data-view]');
+    if(viewBtn){
+      var entry = entries.find(function(x){ return x.id === viewBtn.getAttribute('data-view'); });
+      openScreenshot(entry ? entry.screenshotUrl : null);
+      return;
+    }
+    var delBtn = e.target.closest('[data-del]');
+    if(delBtn){
+      var id = delBtn.getAttribute('data-del');
+      var entry2 = entries.find(function(x){ return x.id === id; });
+      handleDeleteClick(delBtn, id, entry2 ? entry2.screenshotPath : null);
+      return;
+    }
+  });
+
+  /* ---------- tabs ---------- */
+  document.getElementById('tabNav').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-tab]');
+    if(!btn) return;
+    document.querySelectorAll('#tabNav button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    var tab = btn.getAttribute('data-tab');
+    document.querySelectorAll('.tabpanel').forEach(function(p){
+      p.classList.toggle('active', p.getAttribute('data-panel') === tab);
+    });
+  });
+
+  /* ---------- forms init ---------- */
+  function initForms(){
+    GAMES.forEach(function(game){
+      var form = document.getElementById('form-'+game);
+      form.date.value = todayStr();
+      setupFileDrop(form.querySelector('.file-drop'));
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        handleSubmit(game, form);
+      });
+    });
+  }
+
+  /* ---------- live listener ---------- */
+  function listenEntries(){
+    db.collection('entries').onSnapshot(function(snapshot){
+      entries = snapshot.docs.map(function(doc){
+        var d = doc.data();
+        return {
+          id: doc.id, game: d.game, player: d.player, date: d.date,
+          raw: d.raw, ts: d.ts, screenshotPath: d.screenshotPath, screenshotUrl: d.screenshotUrl
+        };
+      });
+      setBanner('', false);
+      renderAll();
+    }, function(err){
+      console.error(err);
+      setBanner('Verbindung zur Datenbank unterbrochen: ' + err.message, true);
+    });
+  }
+
+  /* ---------- boot ---------- */
+  async function boot(){
+    initForms();
+    if(configLooksUnset()){
+      showConfigWarning();
+      setBanner('Nicht verbunden – firebaseConfig fehlt noch.', true);
+      return;
+    }
+    try{
+      setBanner('Verbinde mit der Datenbank …', false);
+      initFirebase();
+      await ensureAuth();
+      listenEntries();
+    }catch(err){
+      console.error(err);
+      setBanner('Verbindung fehlgeschlagen: ' + (err && err.message ? err.message : 'unbekannter Fehler'), true);
+    }
+  }
+
+  boot();
+
+})();
+</script>
+</body>
+</html>
