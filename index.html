@@ -3,16 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Geotrivia Rangliste</title>
+<title>GeoFratzen Rangliste</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-<!-- Firebase (compat SDK - works without a build step) -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-storage-compat.js"></script>
+<!-- Supabase (funktioniert direkt im Browser, kein Build-Schritt nötig) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
   :root{
@@ -190,7 +187,7 @@
         <circle cx="20" cy="20" r="2.2" fill="#0E2B33"/>
       </svg>
       <div>
-        <h1>Geotrivia Rangliste</h1>
+        <h1>GeoFratzen Rangliste</h1>
         <p>GeoRankle · GeoDecide · Geodle · GeoConnections</p>
       </div>
     </div>
@@ -330,7 +327,7 @@
 
   </main>
 
-  <footer>Ergebnisse & Screenshots liegen in Firebase (Firestore + Storage) &ndash; unabhängig von dieser Seite gehostet.</footer>
+  <footer>Ergebnisse & Screenshots werden gemeinsam über Supabase gespeichert und in Echtzeit synchronisiert.</footer>
 </div>
 
 <datalist id="playersList"></datalist>
@@ -342,19 +339,13 @@
 
 <script>
 /* =========================================================================
-   1) FIREBASE-KONFIGURATION — HIER ANPASSEN
-   Trage hier die Werte aus deinem eigenen Firebase-Projekt ein
-   (Projekteinstellungen -> Allgemein -> "Meine Apps" -> Web-App).
-   Siehe README.md für die Schritt-für-Schritt-Anleitung.
+   1) SUPABASE-KONFIGURATION — NUR DIESE 2 WERTE EINTRAGEN
+   Supabase Dashboard -> Project Settings / API:
+   - Project URL
+   - Publishable key (oder legacy anon key)
    ========================================================================= */
-  const firebaseConfig = {
-    apiKey: "DEIN_API_KEY",
-    authDomain: "DEIN_PROJEKT.firebaseapp.com",
-    projectId: "DEIN_PROJEKT",
-    storageBucket: "DEIN_PROJEKT.appspot.com",
-    messagingSenderId: "DEINE_SENDER_ID",
-    appId: "DEINE_APP_ID"
-  };
+  const SUPABASE_URL = "https://cgebeadveekxlbdubjkq.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_9bAyiT9-wXIGg_ddT_j-Uw_QEQmLD4Q";
 /* ========================================================================= */
 </script>
 
@@ -368,7 +359,9 @@
 
   var entries = [];
   var confirmTimers = {};
-  var db, storage, auth;
+  var sb = null;
+  var realtimeChannel = null;
+  var backendReady = false;
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){
@@ -398,35 +391,38 @@
     el.classList.toggle('err', !!isErr);
   }
 
-  /* ---------- Firebase init ---------- */
+  function setSubmitEnabled(enabled){
+    document.querySelectorAll('button.submit-btn').forEach(function(btn){
+      btn.disabled = !enabled;
+    });
+  }
+
+  /* ---------- Supabase init ---------- */
   function configLooksUnset(){
-    return firebaseConfig.apiKey === 'DEIN_API_KEY' || !firebaseConfig.apiKey;
+    return !SUPABASE_URL ||
+      !SUPABASE_KEY ||
+      SUPABASE_URL.indexOf('DEINE_') !== -1 ||
+      SUPABASE_KEY.indexOf('DEIN_') !== -1;
   }
 
   function showConfigWarning(){
     var div = document.createElement('div');
     div.className = 'config-warning';
     div.innerHTML =
-      'Diese Seite ist noch nicht mit einer Firebase-Datenbank verbunden. ' +
-      'Trage deine eigenen Werte in <code>firebaseConfig</code> am Anfang des ' +
-      '<code>&lt;script&gt;</code>-Blocks in <code>index.html</code> ein. ' +
-      'Schritt-für-Schritt-Anleitung: siehe <code>README.md</code>.';
+      '<strong>Einmalige Einrichtung nötig.</strong><br>' +
+      'Die App selbst ist fertig. Erstelle ein Supabase-Projekt, führe die mitgelieferte ' +
+      '<code>supabase_setup.sql</code> im SQL Editor aus und trage anschließend oben in ' +
+      '<code>index.html</code> nur <code>SUPABASE_URL</code> und <code>SUPABASE_KEY</code> ein.';
     document.querySelector('.wrap').insertBefore(div, document.getElementById('tabNav'));
   }
 
-  function initFirebase(){
-    firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.firestore();
-    storage = firebase.storage();
-  }
-
-  function ensureAuth(){
-    return new Promise(function(resolve, reject){
-      var unsub = auth.onAuthStateChanged(function(user){
-        if(user){ unsub(); resolve(user); }
-      }, reject);
-      auth.signInAnonymously().catch(reject);
+  function initSupabase(){
+    if(!window.supabase || !window.supabase.createClient){
+      throw new Error('Supabase-Bibliothek konnte nicht geladen werden.');
+    }
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      realtime: { params: { eventsPerSecond: 5 } }
     });
   }
 
@@ -446,25 +442,25 @@
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img,0,0,w,h);
           canvas.toBlob(function(blob){
-            if(!blob){ reject(new Error('compress failed')); return; }
+            if(!blob){ reject(new Error('Bildkomprimierung fehlgeschlagen')); return; }
             resolve(blob);
           }, 'image/jpeg', 0.72);
         };
-        img.onerror = function(){ reject(new Error('image decode failed')); };
+        img.onerror = function(){ reject(new Error('Bild konnte nicht gelesen werden')); };
         img.src = e.target.result;
       };
-      reader.onerror = function(){ reject(new Error('file read failed')); };
+      reader.onerror = function(){ reject(new Error('Datei konnte nicht gelesen werden')); };
       reader.readAsDataURL(file);
     });
   }
 
-  /* ---------- scoring (unverändert) ---------- */
+  /* ---------- scoring ---------- */
   function numericFor(e){
     switch(e.game){
-      case 'georankle': return e.raw.points;
-      case 'geodecide': return e.raw.streak;
+      case 'georankle': return Number(e.raw.points);
+      case 'geodecide': return Number(e.raw.streak);
       case 'geodle': return e.raw.guesses === 'X' ? 7 : Number(e.raw.guesses);
-      case 'geoconnections': return e.raw.solved ? e.raw.mistakes : 50;
+      case 'geoconnections': return e.raw.solved ? Number(e.raw.mistakes) : 50;
     }
   }
 
@@ -551,7 +547,7 @@
     return Object.keys(set).sort(function(a,b){ return a.localeCompare(b); });
   }
 
-  /* ---------- rendering (unverändert ggü. Artefakt-Version) ---------- */
+  /* ---------- rendering ---------- */
   function renderPlayersDatalist(){
     var dl = document.getElementById('playersList');
     dl.innerHTML = computePlayers().map(function(p){ return '<option value="'+escapeHtml(p)+'">'; }).join('');
@@ -664,7 +660,10 @@
     var input = dropEl.querySelector('input[type=file]');
     var label = dropEl.querySelector('.fd-label');
     var defaultLabel = label.textContent;
-    dropEl.addEventListener('click', function(){ input.click(); });
+    dropEl.addEventListener('click', function(e){
+      if(e.target === input) return;
+      input.click();
+    });
     input.addEventListener('change', function(){
       var existingThumb = dropEl.querySelector('.preview-thumb');
       if(existingThumb) existingThumb.remove();
@@ -689,9 +688,76 @@
     dropEl.querySelector('.fd-label').textContent = 'Tippen, um ein Bild auszuwählen';
   }
 
+  function newId(){
+    if(window.crypto && typeof window.crypto.randomUUID === 'function'){
+      return window.crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+      var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
+      return v.toString(16);
+    });
+  }
+
+  function publicScreenshotUrl(path){
+    if(!path || !sb) return null;
+    var result = sb.storage.from('screenshots').getPublicUrl(path);
+    return result && result.data ? result.data.publicUrl : null;
+  }
+
+  /* ---------- Supabase data ---------- */
+  async function loadEntries(){
+    var result = await sb
+      .from('entries')
+      .select('id,game,player,played_on,raw,created_at,screenshot_path')
+      .order('created_at', { ascending: false });
+
+    if(result.error) throw result.error;
+
+    entries = (result.data || []).map(function(d){
+      return {
+        id: d.id,
+        game: d.game,
+        player: d.player,
+        date: d.played_on,
+        raw: d.raw || {},
+        ts: d.created_at ? new Date(d.created_at).getTime() : 0,
+        screenshotPath: d.screenshot_path,
+        screenshotUrl: publicScreenshotUrl(d.screenshot_path)
+      };
+    });
+    renderAll();
+  }
+
+  function startRealtime(){
+    realtimeChannel = sb
+      .channel('geofratzen-entries')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'entries' },
+        function(){
+          loadEntries().catch(function(err){
+            console.error(err);
+            setBanner('Live-Aktualisierung fehlgeschlagen: ' + (err.message || err), true);
+          });
+        }
+      )
+      .subscribe(function(status){
+        if(status === 'SUBSCRIBED'){
+          setBanner('', false);
+        } else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
+          setBanner('Live-Verbindung unterbrochen. Die Seite versucht weiter zu synchronisieren.', true);
+        }
+      });
+  }
+
   /* ---------- submit ---------- */
   async function handleSubmit(game, form){
     clearMsg(game);
+
+    if(!backendReady || !sb){
+      showMsg(game,'error','Die gemeinsame Datenbank ist noch nicht eingerichtet.');
+      return;
+    }
+
     var name = form.player.value.trim();
     var date = form.date.value;
     var fileInput = form.querySelector('input[type=file]');
@@ -714,7 +780,7 @@
       if(streak === ''){ showMsg(game,'error','Bitte die Länge der Serie eingeben.'); return; }
       streak = Number(streak);
       if(!Number.isFinite(streak) || streak < 0 || Math.round(streak)!==streak){
-        showMsg(game,'error','Bitte eine gültige, positive ganze Zahl eingeben.'); return;
+        showMsg(game,'error','Bitte eine gültige, nicht negative ganze Zahl eingeben.'); return;
       }
       raw = { streak: streak };
     } else if(game === 'geodle'){
@@ -726,7 +792,7 @@
       if(mistakes === ''){ showMsg(game,'error','Bitte die Anzahl Fehlversuche eingeben.'); return; }
       mistakes = Number(mistakes);
       if(!Number.isFinite(mistakes) || mistakes < 0 || Math.round(mistakes)!==mistakes){
-        showMsg(game,'error','Bitte eine gültige, positive ganze Zahl eingeben.'); return;
+        showMsg(game,'error','Bitte eine gültige, nicht negative ganze Zahl eingeben.'); return;
       }
       raw = { mistakes: mistakes, solved: form.solved.checked };
     }
@@ -736,32 +802,44 @@
     var btn = form.querySelector('button.submit-btn');
     btn.disabled = true;
     btn.textContent = 'Speichere …';
-    try{
-      var docRef = db.collection('entries').doc();
-      var id = docRef.id;
-      var blob = await fileToCompressedBlob(file);
-      var path = 'screenshots/' + id + '.jpg';
-      var storeRef = storage.ref().child(path);
-      await storeRef.put(blob, { contentType: 'image/jpeg' });
-      var url = await storeRef.getDownloadURL();
 
-      await docRef.set({
+    var id = newId();
+    var path = id + '.jpg';
+
+    try{
+      var blob = await fileToCompressedBlob(file);
+
+      var upload = await sb.storage
+        .from('screenshots')
+        .upload(path, blob, {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: false
+        });
+      if(upload.error) throw upload.error;
+
+      var insert = await sb.from('entries').insert({
+        id: id,
         game: game,
         player: name,
-        date: date,
+        played_on: date,
         raw: raw,
-        ts: Date.now(),
-        screenshotPath: path,
-        screenshotUrl: url
+        screenshot_path: path
       });
+      if(insert.error){
+        await sb.storage.from('screenshots').remove([path]);
+        throw insert.error;
+      }
 
       form.reset();
       form.date.value = todayStr();
       if(game === 'geoconnections') form.solved.checked = true;
       resetFileDrop(form.querySelector('.file-drop'));
       showMsg(game,'success','Ergebnis gespeichert.');
-      /* entries[] und die Anzeige aktualisieren sich automatisch über den
-         Firestore-Live-Listener (onSnapshot) - kein manueller Refresh nötig. */
+
+      // Sofort lokal aktualisieren; Realtime synchronisiert parallel alle Geräte.
+      await loadEntries();
+
     }catch(err){
       console.error(err);
       showMsg(game,'error','Beim Speichern ist etwas schiefgelaufen: ' + (err && err.message ? err.message : 'unbekannter Fehler'));
@@ -787,9 +865,16 @@
   }
 
   async function deleteEntry(id, path){
+    if(!backendReady || !sb) return;
     try{
-      await db.collection('entries').doc(id).delete();
-      if(path){ await storage.ref().child(path).delete().catch(function(){}); }
+      var del = await sb.from('entries').delete().eq('id', id);
+      if(del.error) throw del.error;
+
+      if(path){
+        var delFile = await sb.storage.from('screenshots').remove([path]);
+        if(delFile.error) console.warn('Screenshot konnte nicht gelöscht werden:', delFile.error);
+      }
+      await loadEntries();
     }catch(err){
       console.error(err);
       alert('Löschen fehlgeschlagen: ' + (err && err.message ? err.message : ''));
@@ -808,7 +893,7 @@
       return;
     }
     modalContent.className = '';
-    modalContent.innerHTML = '<img src="'+url+'" alt="Ergebnis-Screenshot">';
+    modalContent.innerHTML = '<img src="'+escapeHtml(url)+'" alt="Ergebnis-Screenshot">';
   }
   function closeModal(){ modal.classList.remove('open'); }
   document.getElementById('modalClose').addEventListener('click', closeModal);
@@ -856,42 +941,36 @@
     });
   }
 
-  /* ---------- live listener ---------- */
-  function listenEntries(){
-    db.collection('entries').onSnapshot(function(snapshot){
-      entries = snapshot.docs.map(function(doc){
-        var d = doc.data();
-        return {
-          id: doc.id, game: d.game, player: d.player, date: d.date,
-          raw: d.raw, ts: d.ts, screenshotPath: d.screenshotPath, screenshotUrl: d.screenshotUrl
-        };
-      });
-      setBanner('', false);
-      renderAll();
-    }, function(err){
-      console.error(err);
-      setBanner('Verbindung zur Datenbank unterbrochen: ' + err.message, true);
-    });
-  }
-
   /* ---------- boot ---------- */
   async function boot(){
     initForms();
+    setSubmitEnabled(false);
+
     if(configLooksUnset()){
       showConfigWarning();
-      setBanner('Nicht verbunden – firebaseConfig fehlt noch.', true);
+      setBanner('Einmalige Supabase-Einrichtung fehlt noch.', true);
       return;
     }
+
     try{
-      setBanner('Verbinde mit der Datenbank …', false);
-      initFirebase();
-      await ensureAuth();
-      listenEntries();
+      setBanner('Verbinde mit der gemeinsamen Rangliste …', false);
+      initSupabase();
+      await loadEntries();
+      backendReady = true;
+      setSubmitEnabled(true);
+      startRealtime();
+      setBanner('', false);
     }catch(err){
       console.error(err);
+      backendReady = false;
+      setSubmitEnabled(false);
       setBanner('Verbindung fehlgeschlagen: ' + (err && err.message ? err.message : 'unbekannter Fehler'), true);
     }
   }
+
+  window.addEventListener('beforeunload', function(){
+    if(sb && realtimeChannel) sb.removeChannel(realtimeChannel);
+  });
 
   boot();
 
