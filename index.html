@@ -145,6 +145,12 @@
   @keyframes winnerFade{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
 
   footer{text-align:center;padding:24px 20px;font-size:11.5px;color:var(--ink-inv-soft)}
+  .admin-controls{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}
+  .admin-btn{appearance:none;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.055);color:var(--ink-inv-soft);border-radius:999px;padding:7px 12px;font:700 11.5px 'Manrope',sans-serif;cursor:pointer;transition:.16s ease}
+  .admin-btn:hover{background:rgba(255,255,255,.10);color:#fff;border-color:rgba(255,255,255,.22)}
+  .admin-btn.active{background:rgba(38,208,255,.14);border-color:rgba(38,208,255,.42);color:var(--cyan)}
+  .admin-status{font-size:11px;color:var(--ink-inv-soft)}
+  .admin-status.active{color:var(--cyan);font-weight:800}
   .config-warning{margin:20px 16px;padding:16px;border-radius:16px;background:#4B2430;color:#FFE0E5;font-size:13px;line-height:1.6;box-shadow:0 14px 30px rgba(0,0,0,.16)}.config-warning code{background:rgba(0,0,0,.25);padding:1px 5px;border-radius:4px}
 
   @media(max-width:640px){.wrap{max-width:100%}.bg-world::before,.bg-world::after,.bg-world .continents{width:132vw;right:-48vw;top:135px}}
@@ -306,7 +312,13 @@
 
   </main>
 
-  <footer>GeoFratzen &middot; Wochenrangliste mit Screenshots, Wochensiegen und Live-Synchronisierung.</footer>
+  <footer>
+    <div>GeoFratzen &middot; Wochenrangliste mit Screenshots, Wochensiegen und Live-Synchronisierung.</div>
+    <div class="admin-controls">
+      <button type="button" class="admin-btn" id="adminModeBtn">Admin</button>
+      <span class="admin-status" id="adminStatus">Admin-Modus aus</span>
+    </div>
+  </footer>
 </div>
 
 <datalist id="playersList"></datalist>
@@ -347,6 +359,8 @@
   var LABELS = { georankle:'GeoRankle', geodecide:'GeoDecide', geodle:'Geodle', geoconnections:'GeoConnections' };
   var GAMES = ['georankle','geodecide','geodle','geoconnections'];
   var WEEK_TIME_ZONE = 'Europe/Vienna';
+  var ADMIN_PIN = '8883';
+  var isAdmin = sessionStorage.getItem('geofratzenAdmin') === 'true';
 
   var entries = [];
   var confirmTimers = {};
@@ -359,6 +373,37 @@
     return String(s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
+  }
+
+  function updateAdminUI(){
+    var btn = document.getElementById('adminModeBtn');
+    var status = document.getElementById('adminStatus');
+    if(!btn || !status) return;
+    btn.textContent = isAdmin ? 'Admin abmelden' : 'Admin';
+    btn.classList.toggle('active', isAdmin);
+    status.textContent = isAdmin ? 'Admin-Modus aktiv' : 'Admin-Modus aus';
+    status.classList.toggle('active', isAdmin);
+  }
+
+  function toggleAdminMode(){
+    if(isAdmin){
+      isAdmin = false;
+      sessionStorage.removeItem('geofratzenAdmin');
+      updateAdminUI();
+      renderAll();
+      return;
+    }
+
+    var pin = window.prompt('Admin-PIN eingeben:');
+    if(pin === null) return;
+    if(pin === ADMIN_PIN){
+      isAdmin = true;
+      sessionStorage.setItem('geofratzenAdmin', 'true');
+      updateAdminUI();
+      renderAll();
+    } else {
+      window.alert('Falsche Admin-PIN.');
+    }
   }
 
   function todayStr(){
@@ -836,7 +881,7 @@
         '</div>' +
         '<div class="hist-actions">' +
           '<button class="icon-btn" data-view="'+e.id+'" title="Screenshot ansehen">📷</button>' +
-          '<button class="icon-btn danger" data-del="'+e.id+'" title="Eintrag löschen">🗑</button>' +
+          (isAdmin ? '<button class="icon-btn danger" data-del="'+e.id+'" title="Eintrag löschen">🗑</button>' : '') +
         '</div>' +
       '</li>';
     }).join('');
@@ -1070,6 +1115,9 @@
   document.getElementById('modalClose').addEventListener('click', closeModal);
   modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
 
+  document.getElementById('adminModeBtn').addEventListener('click', toggleAdminMode);
+  updateAdminUI();
+
   document.getElementById('main').addEventListener('click', function(e){
     var viewBtn = e.target.closest('[data-view]');
     if(viewBtn){
@@ -1079,6 +1127,7 @@
     }
     var delBtn = e.target.closest('[data-del]');
     if(delBtn){
+      if(!isAdmin) return;
       var id = delBtn.getAttribute('data-del');
       var entry2 = entries.find(function(x){ return x.id === id; });
       handleDeleteClick(delBtn, id, entry2 ? entry2.screenshotPath : null);
@@ -1111,6 +1160,7 @@
 
   async function boot(){
     initForms();
+    updateAdminUI();
     setSubmitEnabled(false);
     if(configLooksUnset()){
       showConfigWarning();
