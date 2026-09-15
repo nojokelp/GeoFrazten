@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GeoFratzen Rangliste</title>
-<link rel="icon" type="image/png" href="logo.png">
+<link rel="icon" type="image/png" href="./logo.png?v=20260915b">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,175 +14,225 @@
 
 <style>
   :root{
-    --bg:#091C2E;
-    --bg-alt:#0F3558;
-    --bg-alt2:#0A2740;
+    --bg:#07192A;
+    --bg-alt:#0B2C49;
+    --bg-alt2:#113B60;
     --paper:#FFF5E4;
-    --paper-dim:#F4E6C8;
-    --ink:#1C1E24;
-    --ink-soft:#6C5647;
-    --ink-inv:#FFF6E6;
-    --ink-inv-soft:#D7DEEA;
-    --brass:#D8A74C;
-    --brass-dim:#B7842E;
-    --sky:#39AFFF;
-    --sky-soft:#7DCCFF;
-    --sunset:#F49C42;
-    --brick:#CB6335;
-    --line:rgba(28,30,36,0.14);
-    --line-dark:rgba(255,246,230,0.14);
-    --radius:16px;
-    --shadow:0 18px 42px rgba(0,0,0,0.24);
+    --paper-dim:#F5E6C7;
+    --ink:#1F2127;
+    --ink-soft:#6F5A48;
+    --ink-inv:#FFF7E8;
+    --ink-inv-soft:#D7E0EA;
+    --gold:#D7A64D;
+    --gold-deep:#B9812B;
+    --sky:#36A8F4;
+    --sky-soft:#8AD3FF;
+    --sun:#F29B41;
+    --brick:#C76135;
+    --line:rgba(31,33,39,0.14);
+    --line-dark:rgba(255,247,232,0.13);
+    --radius:18px;
+    --shadow:0 18px 42px rgba(0,0,0,0.20);
   }
+
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:
-      radial-gradient(circle at 18% 14%, rgba(57,175,255,0.18), transparent 28%),
-      radial-gradient(circle at 84% 10%, rgba(244,156,66,0.14), transparent 24%),
-      radial-gradient(circle at 82% 88%, rgba(216,167,76,0.10), transparent 28%),
-      linear-gradient(180deg, #0D3150 0%, #0A2337 45%, #071827 100%);
+    background:linear-gradient(180deg,#0E304F 0%, #081C2E 45%, #061522 100%);
     color:var(--ink-inv);
     font-family:'IBM Plex Sans', sans-serif;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
+    position:relative;
+    overflow-x:hidden;
   }
-  .wrap{max-width:760px;margin:0 auto;padding:0 0 64px;}
+  .bg-world{
+    position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 20% 10%, rgba(138,211,255,0.10), transparent 22%),
+      radial-gradient(circle at 82% 14%, rgba(242,155,65,0.08), transparent 22%),
+      radial-gradient(circle at 80% 80%, rgba(215,166,77,0.08), transparent 24%);
+  }
+  .bg-world::before{
+    content:"";
+    position:absolute;
+    width:min(86vw,760px); aspect-ratio:1; right:-180px; top:90px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255,255,255,0.15), transparent 14%),
+      radial-gradient(circle at 65% 74%, rgba(242,155,65,0.13), transparent 16%),
+      linear-gradient(135deg, rgba(68,179,255,0.92) 0%, rgba(19,82,129,0.95) 48%, rgba(6,30,49,0.98) 100%);
+    box-shadow:
+      0 0 0 2px rgba(255,255,255,0.08),
+      inset -44px -44px 120px rgba(4,18,31,0.72),
+      inset 18px 18px 42px rgba(255,255,255,0.08),
+      0 0 120px rgba(54,168,244,0.12);
+  }
+  .bg-world::after{
+    content:"";
+    position:absolute;
+    width:min(86vw,760px); aspect-ratio:1; right:-180px; top:90px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at center, transparent 0 61%, rgba(255,255,255,0.16) 61.2% 61.8%, transparent 62%),
+      repeating-linear-gradient(90deg, transparent 0 34px, rgba(255,255,255,0.11) 34px 36px),
+      repeating-linear-gradient(0deg, transparent 0 38px, rgba(255,255,255,0.08) 38px 39px);
+    opacity:.30;
+    mask: radial-gradient(circle at center, #000 0 66%, transparent 67%);
+    -webkit-mask: radial-gradient(circle at center, #000 0 66%, transparent 67%);
+    animation: globeSpin 28s linear infinite;
+  }
+  .bg-world .continents{
+    position:absolute;
+    width:min(86vw,760px); aspect-ratio:1; right:-180px; top:90px;
+    border-radius:50%; overflow:hidden; opacity:.55;
+    mask: radial-gradient(circle at center, #000 0 66%, transparent 67%);
+    -webkit-mask: radial-gradient(circle at center, #000 0 66%, transparent 67%);
+  }
+  .bg-world .continents::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 600'%3E%3Cg fill='%23d8c672' fill-opacity='0.72'%3E%3Cpath d='M120 212c44-67 129-111 216-105 32 2 56 10 75 18 44 18 73 17 96 13 44-8 86-35 132-22 46 13 72 53 79 96 7 42 35 53 55 63 32 16 64 50 57 90-7 39-51 56-90 61-66 9-126-18-187-16-50 1-102 23-149 11-43-11-68-48-103-71-34-23-82-25-116-53-55-44-95-147-65-185z'/%3E%3Cpath d='M684 144c40-24 111-24 155 6 30 20 43 45 67 59 25 14 58 17 74 42 25 41-4 101-42 128-35 26-69 27-84 64-8 20-5 46-20 62-37 40-114 3-144-34-20-25-26-58-51-78-22-18-54-23-73-44-42-47-23-138 31-181 23-18 60-13 87-24z'/%3E%3Cpath d='M928 324c26-23 62-24 93-14 23 8 43 27 67 29 40 3 69 41 69 78 0 47-44 78-90 88-58 12-128 5-163-43-17-24-16-54-8-82 6-20 15-42 32-56z'/%3E%3C/g%3E%3C/svg%3E");
+    background-repeat:repeat-x;
+    background-size:210% 100%;
+    background-position:0 50%;
+    filter:blur(1px);
+    animation: continentsDrift 34s linear infinite;
+  }
+  @keyframes globeSpin { from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
+  @keyframes continentsDrift { from{ background-position:0 50%; } to{ background-position:-210% 50%; } }
+
+  .wrap{max-width:760px;margin:0 auto;padding:0 0 70px;position:relative;z-index:1;}
 
   header{
-    padding:28px 20px 18px;
-    border-bottom:1px solid var(--line-dark);
-    background:linear-gradient(180deg, rgba(7,23,38,0.40), rgba(7,23,38,0));
+    padding:28px 20px 18px;border-bottom:1px solid var(--line-dark);
+    background:linear-gradient(180deg, rgba(9,31,50,0.50), rgba(9,31,50,0.16));
+    backdrop-filter:blur(2px);
   }
-  .brand{display:flex;align-items:center;gap:16px;}
-  .brand-logo{
-    width:88px;height:88px;object-fit:cover;border-radius:24px;flex:none;
-    border:2px solid rgba(255,246,230,0.28);background:#fff;
-    box-shadow:0 14px 30px rgba(0,0,0,0.24);
+  .brand{display:flex;align-items:flex-start;gap:16px;}
+  .brand-logo-wrap{position:relative;flex:none;}
+  .brand-logo,
+  .brand-logo-fallback{
+    width:96px;height:96px;border-radius:28px;border:2px solid rgba(255,247,232,0.25);
+    box-shadow:0 14px 28px rgba(0,0,0,0.22);background:#ffffff;overflow:hidden;
+  }
+  .brand-logo{display:block;object-fit:cover;}
+  .brand-logo-fallback{
+    display:none;align-items:center;justify-content:center;font-family:'Fraunces', serif;
+    color:var(--gold-deep);font-size:34px;font-weight:700;
+    background:linear-gradient(180deg,#fffdf8 0%, #f2e4c1 100%);
   }
   .brand-copy{min-width:0;}
   .brand h1{
-    font-family:'Fraunces', serif;font-weight:700;
-    font-size:clamp(28px,6vw,36px);margin:0;letter-spacing:0.2px;color:var(--ink-inv);
-    line-height:1.05;
+    font-family:'Fraunces', serif;font-weight:700;margin:0;
+    font-size:clamp(28px,6vw,38px);line-height:1.02;letter-spacing:0.2px;color:var(--ink-inv);
   }
-  .brand p{margin:5px 0 0;font-size:14px;color:var(--ink-inv-soft);}
+  .brand p{margin:7px 0 0;font-size:14px;color:var(--ink-inv-soft);}
   .brand .slogan{
-    margin:6px 0 0;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;
-    color:var(--brass);font-weight:600;
+    margin:10px 0 0;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;
+    color:var(--gold);font-weight:700;
   }
   .share-note{
-    margin:16px 0 0;font-size:13px;line-height:1.6;color:var(--ink-inv-soft);
-    border-left:3px solid var(--brass);padding:10px 0 10px 12px;
-    background:rgba(255,255,255,0.03);border-radius:0 10px 10px 0;
+    margin:18px 0 0;font-size:13px;line-height:1.65;color:var(--ink-inv-soft);
+    border-left:3px solid var(--gold);padding:12px 0 12px 12px;
+    background:rgba(255,255,255,0.04);border-radius:0 14px 14px 0;
   }
 
   #connBanner{
     display:none;margin:0;padding:11px 20px;font-size:12.5px;
-    background:rgba(8,25,40,0.94);color:var(--ink-inv-soft);border-bottom:1px solid var(--line-dark);
+    background:rgba(7,23,38,0.94);color:var(--ink-inv-soft);border-bottom:1px solid var(--line-dark);
   }
   #connBanner.show{display:block;}
   #connBanner.err{color:#FFD0C0;}
 
   nav.tabs{
-    display:flex;gap:6px;overflow-x:auto;padding:12px 16px;
-    background:rgba(12,45,73,0.86);border:1px solid rgba(255,255,255,0.06);
-    border-left:none;border-right:none;
+    display:flex;gap:6px;overflow-x:auto;padding:12px 16px;background:rgba(11,44,73,0.82);
+    border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.07);
     position:sticky;top:0;z-index:5;scrollbar-width:none;backdrop-filter:blur(10px);
-    box-shadow:0 10px 24px rgba(0,0,0,0.14);
   }
   nav.tabs::-webkit-scrollbar{display:none;}
   nav.tabs button{
-    flex:none;font-family:'IBM Plex Sans', sans-serif;font-size:14px;font-weight:600;
-    padding:9px 15px;border:none;border-radius:999px;background:transparent;
-    color:var(--ink-inv-soft);cursor:pointer;transition:background .15s ease, color .15s ease, transform .15s ease;
+    flex:none;font-family:'IBM Plex Sans', sans-serif;font-size:14px;font-weight:700;
+    padding:9px 16px;border:none;border-radius:999px;background:transparent;
+    color:var(--ink-inv-soft);cursor:pointer;transition:background .15s ease, color .15s ease;
     white-space:nowrap;
   }
-  nav.tabs button.active{
-    background:linear-gradient(135deg, var(--brass), #F1C76F);
-    color:#241708;box-shadow:0 8px 18px rgba(0,0,0,0.18);
-  }
-  nav.tabs button:not(.active):hover{background:rgba(255,246,230,0.08);color:var(--ink-inv);transform:translateY(-1px);}
+  nav.tabs button.active{background:linear-gradient(135deg, var(--gold) 0%, #F0C86E 100%);color:#261808;box-shadow:0 10px 18px rgba(0,0,0,0.16);}
+  nav.tabs button:not(.active):hover{background:rgba(255,247,232,0.08);color:var(--ink-inv);}
 
   main{padding:20px 16px 8px;}
   section.tabpanel{display:none;}
   section.tabpanel.active{display:block;}
 
-  h2.section-title{font-family:'Fraunces', serif;font-weight:600;font-size:21px;margin:28px 0 10px;color:var(--ink-inv);}
+  h2.section-title{font-family:'Fraunces', serif;font-weight:700;font-size:21px;margin:28px 0 10px;color:var(--ink-inv);}
   h2.section-title:first-child{margin-top:4px;}
-  .game-tagline{margin:-6px 0 16px;font-size:13px;color:var(--ink-inv-soft);}
-
-  .hero{
-    background:linear-gradient(180deg, var(--paper) 0%, #F9EED7 100%);
-    color:var(--ink);border-radius:var(--radius);padding:22px 20px;margin-top:6px;
-    box-shadow:var(--shadow);border:1px solid rgba(216,167,76,0.18);
+  .game-tagline{margin:-6px 0 16px;font-size:13px;line-height:1.55;color:var(--ink-inv-soft);}
+  .week-banner{
+    margin:-4px 0 16px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.08);font-size:13px;line-height:1.5;color:var(--ink-inv-soft);
   }
-  .hero .eyebrow{font-size:12px;color:var(--ink-soft);margin:0 0 6px;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;}
-  .hero .leader-name{font-family:'Fraunces', serif;font-weight:700;font-size:clamp(28px,8vw,36px);margin:0;color:var(--brass-dim);}
-  .hero .leader-meta{font-size:13px;color:var(--ink-soft);margin:6px 0 0;}
-  .hero .empty{font-size:14px;color:var(--ink-soft);}
+
+  .hero{background:linear-gradient(180deg, var(--paper) 0%, #FBEFD9 100%);color:var(--ink);border-radius:var(--radius);padding:22px 20px;margin-top:6px;box-shadow:var(--shadow);border:1px solid rgba(215,166,77,0.18);}
+  .hero .eyebrow{font-size:12px;color:var(--ink-soft);margin:0 0 6px;letter-spacing:0.05em;text-transform:uppercase;font-weight:700;}
+  .hero .leader-name{font-family:'Fraunces', serif;font-weight:700;font-size:clamp(28px,8vw,38px);margin:0;color:var(--gold-deep);}
+  .hero .leader-meta{font-size:13px;color:var(--ink-soft);margin:6px 0 0;line-height:1.5;}
+  .hero .empty{font-size:14px;color:var(--ink-soft);line-height:1.55;}
 
   .crown-row{display:flex;gap:12px;overflow-x:auto;margin-top:14px;padding-bottom:6px;scrollbar-width:none;}
   .crown-row::-webkit-scrollbar{display:none;}
-  .crown-card{
-    flex:none;width:148px;background:linear-gradient(180deg, var(--paper) 0%, #F8EDD8 100%);
-    color:var(--ink);border-radius:var(--radius);padding:13px 14px;box-shadow:0 12px 28px rgba(0,0,0,0.16);
-    border:1px solid rgba(216,167,76,0.16);
-  }
-  .crown-card .g-label{font-size:11px;color:var(--ink-soft);margin:0 0 5px;letter-spacing:0.04em;text-transform:uppercase;}
+  .crown-card{flex:none;width:150px;background:linear-gradient(180deg, var(--paper) 0%, #F8ECD6 100%);color:var(--ink);border-radius:var(--radius);padding:14px 14px;box-shadow:0 12px 28px rgba(0,0,0,0.15);border:1px solid rgba(215,166,77,0.16);}
+  .crown-card .g-label{font-size:11px;color:var(--ink-soft);margin:0 0 6px;letter-spacing:0.05em;text-transform:uppercase;}
   .crown-card .g-name{font-family:'Fraunces',serif;font-weight:600;font-size:15px;margin:0;}
-  .crown-card .g-avg{font-size:12px;color:var(--sky);margin:4px 0 0;font-weight:600;}
-  .crown-card .g-empty{font-size:12px;color:var(--ink-soft);}
+  .crown-card .g-avg{font-size:12px;color:var(--sky);margin:4px 0 0;font-weight:700;}
+  .crown-card .g-empty{font-size:12px;color:var(--ink-soft);line-height:1.45;}
 
   details.info{margin-top:16px;background:transparent;border:1px solid var(--line-dark);border-radius:var(--radius);padding:2px 14px;}
   details.info summary{cursor:pointer;font-size:13px;padding:10px 0;color:var(--ink-inv-soft);list-style:none;}
   details.info summary::-webkit-details-marker{display:none;}
-  details.info summary:before{content:"▾ ";color:var(--brass);}
+  details.info summary:before{content:"▾ ";color:var(--gold);}
   details.info p{font-size:12.5px;line-height:1.6;color:var(--ink-inv-soft);margin:0 0 12px;}
 
   ol.board{list-style:none;margin:0;padding:0;background:var(--paper);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
   ol.board li{display:flex;align-items:center;gap:12px;padding:14px 15px;border-bottom:1px solid var(--line);color:var(--ink);}
   ol.board li:last-child{border-bottom:none;}
   .rank-num{font-family:'Fraunces', serif;font-weight:700;font-size:20px;width:30px;color:var(--ink-soft);flex:none;}
-  ol.board li:nth-child(1) .rank-num{color:var(--brass-dim);}
+  ol.board li:nth-child(1) .rank-num{color:var(--gold-deep);}
   .rank-body{flex:1;min-width:0;}
   .rank-body .p-name{font-weight:700;font-size:14.5px;}
-  .rank-body .p-meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .rank-body .p-meta{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.45;}
   .rank-val{font-size:14px;font-weight:700;color:var(--sky);flex:none;text-align:right;}
   .medal{margin-left:4px;}
-  .empty-note{padding:16px 14px;background:var(--paper);border-radius:var(--radius);color:var(--ink-soft);font-size:13.5px;box-shadow:var(--shadow);}
+  .empty-note{padding:16px 14px;background:var(--paper);border-radius:var(--radius);color:var(--ink-soft);font-size:13.5px;box-shadow:var(--shadow);line-height:1.5;}
 
-  form.entry-form{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid var(--sky);}
-  .field{margin-bottom:14px;}
+  form.entry-form{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid var(--sky);overflow:hidden;}
+  .field{margin-bottom:14px;min-width:0;}
   .field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:5px;}
-  .field .hint{font-size:11.5px;color:var(--ink-soft);margin-top:4px;font-weight:400;}
+  .field .hint{font-size:11.5px;color:var(--ink-soft);margin-top:4px;font-weight:400;line-height:1.5;}
   input[type=text],input[type=number],input[type=date],select{
-    width:100%;font-family:'IBM Plex Sans',sans-serif;font-size:15px;padding:11px 12px;
-    border:1px solid rgba(28,30,36,0.14);border-radius:10px;background:#fff;color:var(--ink);
+    width:100%;max-width:100%;min-width:0;display:block;
+    font-family:'IBM Plex Sans',sans-serif;font-size:15px;padding:11px 12px;
+    border:1px solid rgba(31,33,39,0.14);border-radius:10px;background:#fff;color:var(--ink);
   }
+  input[type=date]{appearance:none;-webkit-appearance:none;line-height:1.2;}
+  input[type=date]::-webkit-date-and-time-value{text-align:left;}
   input:focus,select:focus{outline:2px solid var(--sky);outline-offset:1px;}
   .checkbox-row{display:flex;align-items:center;gap:8px;}
   .checkbox-row input{width:auto;}
   .checkbox-row label{margin:0;font-weight:500;color:var(--ink);}
 
-  .file-drop{border:1.5px dashed rgba(28,30,36,0.18);border-radius:12px;padding:15px;text-align:center;cursor:pointer;background:rgba(57,175,255,0.05);}
+  .file-drop{border:1.5px dashed rgba(31,33,39,0.18);border-radius:12px;padding:15px;text-align:center;cursor:pointer;background:rgba(54,168,244,0.05);}
   .file-drop input{display:none;}
   .file-drop .fd-label{font-size:13px;color:var(--ink-soft);}
-  .file-drop.has-file{border-color:var(--sky);background:rgba(57,175,255,0.08);}
+  .file-drop.has-file{border-color:var(--sky);background:rgba(54,168,244,0.08);}
   .preview-thumb{display:block;max-width:100%;max-height:130px;margin:10px auto 0;border-radius:8px;}
 
-  button.submit-btn{
-    width:100%;background:linear-gradient(135deg, var(--sunset) 0%, var(--brass) 100%);
-    color:#241708;border:none;border-radius:12px;padding:13px;
-    font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer;margin-top:6px;
-    box-shadow:0 12px 26px rgba(0,0,0,0.16);
-  }
+  button.submit-btn{width:100%;background:linear-gradient(135deg, var(--sun) 0%, var(--gold) 100%);color:#251709;border:none;border-radius:12px;padding:13px;font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;font-weight:700;cursor:pointer;margin-top:6px;box-shadow:0 12px 26px rgba(0,0,0,0.15);}
   button.submit-btn:disabled{opacity:0.55;cursor:default;}
   button.submit-btn:not(:disabled):active{transform:translateY(1px);}
 
   .msg{font-size:13px;padding:10px 12px;border-radius:10px;margin-bottom:12px;}
-  .msg.error{background:rgba(203,99,53,0.12);color:#B84B24;}
-  .msg.success{background:rgba(57,175,255,0.12);color:#0F5E94;}
+  .msg.error{background:rgba(199,97,53,0.12);color:#B84B24;}
+  .msg.success{background:rgba(54,168,244,0.12);color:#0E5D93;}
 
   ul.history{list-style:none;margin:0;padding:0;}
   ul.history li{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:10px;box-shadow:0 10px 24px rgba(0,0,0,0.14);}
@@ -196,7 +246,7 @@
   .icon-btn.danger{color:var(--brick);}
   .icon-btn.confirming{background:var(--brick);color:#fff;border-color:var(--brick);font-size:10.5px;font-weight:600;width:auto;padding:0 8px;}
 
-  .modal-backdrop{position:fixed;inset:0;background:rgba(6,16,24,0.85);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(6,16,24,0.86);display:none;align-items:center;justify-content:center;z-index:50;padding:24px;}
   .modal-backdrop.open{display:flex;}
   .modal-backdrop img{max-width:100%;max-height:80vh;border-radius:14px;box-shadow:0 10px 34px rgba(0,0,0,0.5);}
   .modal-close{position:absolute;top:18px;right:18px;background:var(--paper);color:var(--ink);border:none;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer;}
@@ -204,33 +254,46 @@
 
   footer{text-align:center;padding:24px 20px;font-size:11.5px;color:var(--ink-inv-soft);}
 
-  .config-warning{
-    margin:20px 16px;padding:16px;border-radius:16px;background:#4F271E;color:#FFE3D7;
-    font-size:13px;line-height:1.6;box-shadow:0 14px 30px rgba(0,0,0,0.16);
-  }
+  .config-warning{margin:20px 16px;padding:16px;border-radius:16px;background:#4F271E;color:#FFE3D7;font-size:13px;line-height:1.6;box-shadow:0 14px 30px rgba(0,0,0,0.16);}
   .config-warning code{background:rgba(0,0,0,0.25);padding:1px 5px;border-radius:4px;}
 
+  @media (max-width: 640px){
+    .wrap{max-width:100%;}
+    .bg-world::before,.bg-world::after,.bg-world .continents{width:132vw;right:-48vw;top:135px;}
+  }
   @media (max-width: 560px){
-    .brand{align-items:flex-start;}
-    .brand-logo{width:72px;height:72px;border-radius:20px;}
+    header{padding:24px 16px 16px;}
+    .brand{gap:14px;}
+    .brand-logo,.brand-logo-fallback{width:88px;height:88px;border-radius:24px;}
     .brand p{font-size:13px;}
     .brand .slogan{font-size:11px;line-height:1.35;}
+    nav.tabs{padding:10px 12px;}
+    nav.tabs button{font-size:13px;padding:8px 13px;}
+    main{padding:18px 12px 8px;}
+    .hero,.crown-card,form.entry-form,ol.board,.empty-note,ul.history li{border-radius:16px;}
+    input[type=text],input[type=number],input[type=date],select{font-size:16px;padding:12px;}
+    .hist-body .h-top{flex-direction:column;align-items:flex-start;}
+    .hist-body .h-date{white-space:normal;}
   }
 </style>
 </head>
 <body>
+<div class="bg-world" aria-hidden="true"><div class="continents"></div></div>
 
 <div class="wrap">
   <header>
     <div class="brand">
-      <img src="logo.png" alt="GeoFratzen Logo" class="brand-logo">
+      <div class="brand-logo-wrap">
+        <img src="./logo.png?v=20260915b" alt="GeoFratzen Logo" class="brand-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+        <div class="brand-logo-fallback" aria-hidden="true">GF</div>
+      </div>
       <div class="brand-copy">
-        <h1>GeoFratzen Rangliste</h1>
+        <h1>GeoFratzen<br>Rangliste</h1>
         <p>GeoRankle · GeoDecide · Geodle · GeoConnections</p>
         <p class="slogan">Good Friends · Bigger Plans · Same Chaos</p>
       </div>
     </div>
-    <p class="share-note">Euer neues GeoFratzen-Logo ist jetzt Teil der App-Identität. Alle Einträge und Screenshots werden gemeinsam gespeichert und in Echtzeit für alle synchronisiert.</p>
+    <p class="share-note">Die Rangliste zählt jetzt wochenweise. Jede Runde läuft bis Sonntagabend um 20:00 Uhr, wird dann aufgelöst und startet direkt neu.</p>
   </header>
 
   <p id="connBanner"></p>
@@ -246,20 +309,24 @@
   <main id="main">
 
     <section class="tabpanel active" data-panel="gesamt">
-      <h2 class="section-title">Gesamtwertung</h2>
+      <h2 class="section-title">Aktuelle Woche</h2>
+      <div class="week-banner" id="weekStatusLine">Lade Wochenstatus &hellip;</div>
       <div class="hero" id="heroBox"><p class="empty">Lade Daten &hellip;</p></div>
       <div class="crown-row" id="crownRow"></div>
       <details class="info">
-        <summary>Wie wird die Gesamtwertung berechnet?</summary>
+        <summary>Wie funktioniert die Wochenwertung?</summary>
         <p>
-          Die vier Spiele haben unterschiedliche Skalen (Punkte, Versuche, Fehler, Länderserie),
-          darum werden sie nicht direkt addiert. Stattdessen bekommt in jedem Spiel Platz 1 die
-          meisten Rangpunkte, der letzte Platz 1 Rangpunkt. Die Gesamtwertung ist der Durchschnitt
-          der Rangpunkte über alle Spiele, die eine Person bereits gespielt hat.
+          Gewertet werden nur Ergebnisse aus der aktuellen Wochenrunde. Jede Runde läuft von Sonntag,
+          20:00 Uhr bis zum folgenden Sonntag, 20:00 Uhr. Innerhalb der Woche werden pro Spiel die
+          Durchschnittswerte pro Person gebildet. Für die Gesamtwertung dieser Woche erhält Platz 1 in
+          jedem Spiel die meisten Rangpunkte. Zusätzlich gibt es eine zweite Rangliste, die zählt, wer
+          über alle abgeschlossenen Wochen am häufigsten gewonnen hat.
         </p>
       </details>
-      <h2 class="section-title">Rangliste</h2>
+      <h2 class="section-title">Wochenrangliste</h2>
       <div id="overallBoard"><p class="empty-note">Lade Rangliste &hellip;</p></div>
+      <h2 class="section-title">Meiste Wochensiege</h2>
+      <div id="weeklyWinsBoard"><p class="empty-note">Lade Wochensiege &hellip;</p></div>
     </section>
 
     <section class="tabpanel" data-panel="georankle">
@@ -280,9 +347,9 @@
             <input type="file" accept="image/*" name="screenshot"></div></div>
         <button type="submit" class="submit-btn">Ergebnis speichern</button>
       </form>
-      <h2 class="section-title">Rangliste</h2>
+      <h2 class="section-title">Wochenrangliste</h2>
       <div id="board-georankle"><p class="empty-note">Noch keine Einträge.</p></div>
-      <h2 class="section-title">Verlauf</h2>
+      <h2 class="section-title">Verlauf aller Einträge</h2>
       <ul class="history" id="history-georankle"></ul>
     </section>
 
@@ -304,9 +371,9 @@
             <input type="file" accept="image/*" name="screenshot"></div></div>
         <button type="submit" class="submit-btn">Ergebnis speichern</button>
       </form>
-      <h2 class="section-title">Rangliste</h2>
+      <h2 class="section-title">Wochenrangliste</h2>
       <div id="board-geodecide"><p class="empty-note">Noch keine Einträge.</p></div>
-      <h2 class="section-title">Verlauf</h2>
+      <h2 class="section-title">Verlauf aller Einträge</h2>
       <ul class="history" id="history-geodecide"></ul>
     </section>
 
@@ -332,9 +399,9 @@
             <input type="file" accept="image/*" name="screenshot"></div></div>
         <button type="submit" class="submit-btn">Ergebnis speichern</button>
       </form>
-      <h2 class="section-title">Rangliste</h2>
+      <h2 class="section-title">Wochenrangliste</h2>
       <div id="board-geodle"><p class="empty-note">Noch keine Einträge.</p></div>
-      <h2 class="section-title">Verlauf</h2>
+      <h2 class="section-title">Verlauf aller Einträge</h2>
       <ul class="history" id="history-geodle"></ul>
     </section>
 
@@ -358,15 +425,15 @@
             <input type="file" accept="image/*" name="screenshot"></div></div>
         <button type="submit" class="submit-btn">Ergebnis speichern</button>
       </form>
-      <h2 class="section-title">Rangliste</h2>
+      <h2 class="section-title">Wochenrangliste</h2>
       <div id="board-geoconnections"><p class="empty-note">Noch keine Einträge.</p></div>
-      <h2 class="section-title">Verlauf</h2>
+      <h2 class="section-title">Verlauf aller Einträge</h2>
       <ul class="history" id="history-geoconnections"></ul>
     </section>
 
   </main>
 
-  <footer>GeoFratzen &middot; gemeinsame Rangliste mit Screenshots, Supabase-Sync und CI im Look eures neuen Logos.</footer>
+  <footer>GeoFratzen &middot; Wochenrangliste mit Screenshots, Wochensiegen und Live-Synchronisierung.</footer>
 </div>
 
 <datalist id="playersList"></datalist>
@@ -422,6 +489,16 @@
     return p[2]+'.'+p[1]+'.'+p[0];
   }
 
+  function fmtDateTime(ts){
+    var d = new Date(ts);
+    return d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) + ' · ' +
+      d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' }) + ' Uhr';
+  }
+
+  function fmtShortDate(ts){
+    return new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+  }
+
   function setBanner(text, isErr){
     var el = document.getElementById('connBanner');
     if(!text){ el.classList.remove('show'); return; }
@@ -436,12 +513,8 @@
     });
   }
 
-  /* ---------- Supabase init ---------- */
   function configLooksUnset(){
-    return !SUPABASE_URL ||
-      !SUPABASE_KEY ||
-      SUPABASE_URL.indexOf('DEINE_') !== -1 ||
-      SUPABASE_KEY.indexOf('DEIN_') !== -1;
+    return !SUPABASE_URL || !SUPABASE_KEY || SUPABASE_URL.indexOf('DEINE_') !== -1 || SUPABASE_KEY.indexOf('DEIN_') !== -1;
   }
 
   function showConfigWarning(){
@@ -465,14 +538,13 @@
     });
   }
 
-  /* ---------- image compression ---------- */
   function fileToCompressedBlob(file){
     return new Promise(function(resolve,reject){
       var reader = new FileReader();
       reader.onload = function(e){
         var img = new Image();
         img.onload = function(){
-          var w = img.width, h = img.height, maxDim = 1000;
+          var w = img.width, h = img.height, maxDim = 1200;
           if(w > maxDim || h > maxDim){
             if(w >= h){ h = Math.round(h*maxDim/w); w = maxDim; }
             else { w = Math.round(w*maxDim/h); h = maxDim; }
@@ -483,7 +555,7 @@
           canvas.toBlob(function(blob){
             if(!blob){ reject(new Error('Bildkomprimierung fehlgeschlagen')); return; }
             resolve(blob);
-          }, 'image/jpeg', 0.72);
+          }, 'image/jpeg', 0.78);
         };
         img.onerror = function(){ reject(new Error('Bild konnte nicht gelesen werden')); };
         img.src = e.target.result;
@@ -493,7 +565,56 @@
     });
   }
 
-  /* ---------- scoring ---------- */
+  function getWeekWindow(ts){
+    var now = new Date(ts);
+    var end = new Date(now);
+    var daysUntilSunday = (7 - now.getDay()) % 7;
+    end.setDate(now.getDate() + daysUntilSunday);
+    end.setHours(20,0,0,0);
+
+    if(now.getDay() === 0){
+      var todayCutoff = new Date(now);
+      todayCutoff.setHours(20,0,0,0);
+      if(now.getTime() >= todayCutoff.getTime()){
+        end.setDate(end.getDate() + 7);
+      }
+    }
+
+    var start = new Date(end);
+    start.setDate(end.getDate() - 7);
+
+    return {
+      startMs: start.getTime(),
+      endMs: end.getTime(),
+      key: String(start.getTime()),
+      start: start,
+      end: end
+    };
+  }
+
+  function getCurrentWeekWindow(){
+    return getWeekWindow(Date.now());
+  }
+
+  function getRemainingLabel(endMs){
+    var diff = Math.max(0, endMs - Date.now());
+    var totalHours = Math.floor(diff / 3600000);
+    var days = Math.floor(totalHours / 24);
+    var hours = totalHours % 24;
+    var mins = Math.floor((diff % 3600000) / 60000);
+    if(days > 0) return 'Noch ' + days + ' Tag' + (days===1?'':'e') + ' ' + hours + ' Std.';
+    if(hours > 0) return 'Noch ' + hours + ' Std. ' + mins + ' Min.';
+    return 'Endet in ' + mins + ' Min.';
+  }
+
+  function isEntryInWindow(entry, win){
+    return entry.ts >= win.startMs && entry.ts < win.endMs;
+  }
+
+  function entriesForWindow(win, sourceEntries){
+    return (sourceEntries || entries).filter(function(e){ return isEntryInWindow(e, win); });
+  }
+
   function numericFor(e){
     switch(e.game){
       case 'georankle': return Number(e.raw.points);
@@ -501,6 +622,7 @@
       case 'geodle': return e.raw.guesses === 'X' ? 7 : Number(e.raw.guesses);
       case 'geoconnections': return e.raw.solved ? Number(e.raw.mistakes) : 50;
     }
+    return 0;
   }
 
   function displayFor(e){
@@ -510,10 +632,11 @@
       case 'geodle': return e.raw.guesses === 'X' ? 'X · nicht gelöst' : (e.raw.guesses + '/6 Versuche');
       case 'geoconnections': return e.raw.solved ? (e.raw.mistakes + ' Fehlversuche') : ('nicht gelöst (' + e.raw.mistakes + ' Fehlversuche)');
     }
+    return '';
   }
 
-  function gameBoard(game){
-    var rows = entries.filter(function(e){ return e.game===game; });
+  function gameBoard(game, sourceEntries){
+    var rows = (sourceEntries || entries).filter(function(e){ return e.game === game; });
     var byPlayer = {};
     rows.forEach(function(e){
       var v = numericFor(e);
@@ -523,7 +646,7 @@
     });
     var list = Object.keys(byPlayer).map(function(player){
       var d = byPlayer[player];
-      return { player: player, avg: d.sum/d.count, count: d.count };
+      return { player: player, avg: d.sum / d.count, count: d.count };
     });
     var dir = DIRECTION[game];
     list.sort(function(a,b){
@@ -533,18 +656,18 @@
     });
     var rank = 0, prev = null;
     list.forEach(function(item, i){
-      if(prev === null || Math.abs(item.avg - prev) > 1e-9){ rank = i+1; }
+      if(prev === null || Math.abs(item.avg - prev) > 1e-9){ rank = i + 1; }
       item.rank = rank;
       prev = item.avg;
     });
     return list;
   }
 
-  function overallData(){
+  function overallData(sourceEntries){
     var perGame = {};
     var pointsByPlayer = {};
     GAMES.forEach(function(g){
-      var board = gameBoard(g);
+      var board = gameBoard(g, sourceEntries);
       perGame[g] = board;
       var n = board.length;
       board.forEach(function(item){
@@ -556,7 +679,7 @@
     var overall = Object.keys(pointsByPlayer).map(function(player){
       var map = pointsByPlayer[player];
       var vals = Object.keys(map).map(function(k){ return map[k]; });
-      var avg = vals.reduce(function(a,b){return a+b;},0) / vals.length;
+      var avg = vals.reduce(function(a,b){ return a+b; }, 0) / vals.length;
       return { player: player, avgPoints: avg, gamesPlayed: vals.length };
     });
     overall.sort(function(a,b){
@@ -566,11 +689,56 @@
     });
     var rank = 0, prev = null;
     overall.forEach(function(item,i){
-      if(prev === null || Math.abs(item.avgPoints - prev) > 1e-9){ rank = i+1; }
+      if(prev === null || Math.abs(item.avgPoints - prev) > 1e-9){ rank = i + 1; }
       item.rank = rank;
       prev = item.avgPoints;
     });
     return { overall: overall, perGame: perGame };
+  }
+
+  function weeklyWinsData(){
+    var now = Date.now();
+    var byWeek = {};
+    entries.forEach(function(e){
+      var win = getWeekWindow(e.ts);
+      if(win.endMs > now) return; // current/incomplete week does not count yet
+      if(!byWeek[win.key]) byWeek[win.key] = { window: win, rows: [] };
+      byWeek[win.key].rows.push(e);
+    });
+
+    var byPlayer = {};
+    Object.keys(byWeek).forEach(function(key){
+      var group = byWeek[key];
+      var data = overallData(group.rows);
+      if(!data.overall.length) return;
+      var leaders = data.overall.filter(function(item){ return item.rank === 1; });
+      leaders.forEach(function(item){
+        if(!byPlayer[item.player]) byPlayer[item.player] = { player:item.player, wins:0, weeks:[] };
+        byPlayer[item.player].wins += 1;
+        byPlayer[item.player].weeks.push(group.window.endMs);
+      });
+    });
+
+    var list = Object.keys(byPlayer).map(function(player){
+      var obj = byPlayer[player];
+      obj.lastWin = obj.weeks.length ? Math.max.apply(null, obj.weeks) : null;
+      return obj;
+    });
+
+    list.sort(function(a,b){
+      if(b.wins !== a.wins) return b.wins - a.wins;
+      if((b.lastWin || 0) !== (a.lastWin || 0)) return (b.lastWin || 0) - (a.lastWin || 0);
+      return a.player.localeCompare(b.player);
+    });
+
+    var rank = 0, prev = null;
+    list.forEach(function(item, i){
+      if(prev === null || item.wins !== prev){ rank = i + 1; }
+      item.rank = rank;
+      prev = item.wins;
+    });
+
+    return { list:list, totalWeeks:Object.keys(byWeek).length };
   }
 
   function medalFor(rank){
@@ -586,7 +754,6 @@
     return Object.keys(set).sort(function(a,b){ return a.localeCompare(b); });
   }
 
-  /* ---------- rendering ---------- */
   function renderPlayersDatalist(){
     var dl = document.getElementById('playersList');
     dl.innerHTML = computePlayers().map(function(p){ return '<option value="'+escapeHtml(p)+'">'; }).join('');
@@ -594,39 +761,79 @@
 
   function renderBoard(container, list, unitLabel){
     if(list.length === 0){
-      container.innerHTML = '<p class="empty-note">Noch keine Einträge.</p>';
+      container.innerHTML = '<p class="empty-note">Noch keine Einträge für diese Woche.</p>';
       return;
     }
     container.innerHTML = '<ol class="board">' + list.map(function(item){
       return '<li>' +
         '<span class="rank-num">'+item.rank+'</span>' +
         '<span class="rank-body"><span class="p-name">'+escapeHtml(item.player)+' <span class="medal">'+medalFor(item.rank)+'</span></span>' +
-        '<div class="p-meta">'+item.count+' Spiel'+(item.count===1?'':'e')+'</div></span>' +
+        '<div class="p-meta">'+item.count+' Ergebnis'+(item.count===1?'':'se')+' in dieser Woche</div></span>' +
         '<span class="rank-val">'+item.avg.toFixed(1)+' '+unitLabel+'</span>' +
       '</li>';
     }).join('') + '</ol>';
   }
 
+  function renderOverallBoard(container, list){
+    if(list.length === 0){
+      container.innerHTML = '<p class="empty-note">Noch keine Gesamtwertung für diese Woche vorhanden.</p>';
+      return;
+    }
+    container.innerHTML = '<ol class="board">' + list.map(function(item){
+      return '<li>' +
+        '<span class="rank-num">'+item.rank+'</span>' +
+        '<span class="rank-body"><span class="p-name">'+escapeHtml(item.player)+' <span class="medal">'+medalFor(item.rank)+'</span></span>' +
+        '<div class="p-meta">'+item.gamesPlayed+' von 4 Spielen in dieser Woche</div></span>' +
+        '<span class="rank-val">'+item.avgPoints.toFixed(1)+' Pkt</span>' +
+      '</li>';
+    }).join('') + '</ol>';
+  }
+
+  function renderWeeklyWinsBoard(container, data){
+    if(!data.list.length){
+      container.innerHTML = '<p class="empty-note">Noch keine abgeschlossene Woche mit Sieger:in vorhanden. Die erste Auflösung erfolgt am Sonntag um 20:00 Uhr.</p>';
+      return;
+    }
+    container.innerHTML = '<ol class="board">' + data.list.map(function(item){
+      var meta = item.lastWin ? ('Zuletzt gewonnen am ' + fmtDateTime(item.lastWin)) : 'Noch kein gewonnener Abschluss';
+      return '<li>' +
+        '<span class="rank-num">'+item.rank+'</span>' +
+        '<span class="rank-body"><span class="p-name">'+escapeHtml(item.player)+' <span class="medal">'+medalFor(item.rank)+'</span></span>' +
+        '<div class="p-meta">'+meta+'</div></span>' +
+        '<span class="rank-val">'+item.wins+' Sieg'+(item.wins===1?'':'e')+'</span>' +
+      '</li>';
+    }).join('') + '</ol>';
+  }
+
   function renderGesamt(){
-    var data = overallData();
+    var win = getCurrentWeekWindow();
+    var weekRows = entriesForWindow(win, entries);
+    var data = overallData(weekRows);
+    var winsData = weeklyWinsData();
     var heroBox = document.getElementById('heroBox');
     var crownRow = document.getElementById('crownRow');
     var overallBoard = document.getElementById('overallBoard');
+    var weeklyWinsBoard = document.getElementById('weeklyWinsBoard');
+    var weekStatusLine = document.getElementById('weekStatusLine');
+
+    weekStatusLine.innerHTML =
+      '<strong>Aktuelle Runde:</strong> ' + fmtDateTime(win.startMs) + ' bis ' + fmtDateTime(win.endMs) +
+      '<br><strong>Auflösung:</strong> Sonntag 20:00 Uhr · ' + getRemainingLabel(win.endMs);
 
     if(data.overall.length === 0){
-      heroBox.innerHTML = '<p class="eyebrow">Aktuelle Führung</p><p class="empty">Noch keine Ergebnisse eingetragen &ndash; leg als Erste:r los!</p>';
+      heroBox.innerHTML = '<p class="eyebrow">Diese Woche führt noch niemand</p><p class="empty">Noch keine Ergebnisse in der aktuellen Wochenrunde. Trag das erste Ergebnis ein und starte die neue Woche für GeoFratzen.</p>';
     } else {
       var leader = data.overall[0];
       heroBox.innerHTML =
-        '<p class="eyebrow">Aktuell auf Platz 1 &ndash; gesamt</p>' +
+        '<p class="eyebrow">Aktuell auf Platz 1 – diese Woche</p>' +
         '<p class="leader-name">'+escapeHtml(leader.player)+'</p>' +
-        '<p class="leader-meta">'+leader.avgPoints.toFixed(1)+' Ø Rangpunkte über '+leader.gamesPlayed+' Spiel'+(leader.gamesPlayed===1?'':'e')+'</p>';
+        '<p class="leader-meta">'+leader.avgPoints.toFixed(1)+' Ø Rangpunkte über '+leader.gamesPlayed+' Spiel'+(leader.gamesPlayed===1?'':'e')+' in der laufenden Wochenrunde.</p>';
     }
 
     crownRow.innerHTML = GAMES.map(function(g){
       var board = data.perGame[g];
       if(board.length === 0){
-        return '<div class="crown-card"><p class="g-label">'+LABELS[g]+'</p><p class="g-empty">noch offen</p></div>';
+        return '<div class="crown-card"><p class="g-label">'+LABELS[g]+'</p><p class="g-empty">Diese Woche noch offen</p></div>';
       }
       var top = board[0];
       return '<div class="crown-card">' +
@@ -636,25 +843,13 @@
       '</div>';
     }).join('');
 
-    if(data.overall.length === 0){
-      overallBoard.innerHTML = '<p class="empty-note">Noch keine Rangliste vorhanden.</p>';
-    } else {
-      overallBoard.innerHTML = '<ol class="board">' + data.overall.map(function(item){
-        return '<li>' +
-          '<span class="rank-num">'+item.rank+'</span>' +
-          '<span class="rank-body"><span class="p-name">'+escapeHtml(item.player)+' <span class="medal">'+medalFor(item.rank)+'</span></span>' +
-          '<div class="p-meta">'+item.gamesPlayed+' von 4 Spielen</div></span>' +
-          '<span class="rank-val">'+item.avgPoints.toFixed(1)+' Pkt</span>' +
-        '</li>';
-      }).join('') + '</ol>';
-    }
+    renderOverallBoard(overallBoard, data.overall);
+    renderWeeklyWinsBoard(weeklyWinsBoard, winsData);
   }
 
   function renderHistory(game){
     var container = document.getElementById('history-'+game);
-    var rows = entries.filter(function(e){ return e.game===game; })
-      .slice()
-      .sort(function(a,b){ return b.ts - a.ts; });
+    var rows = entries.filter(function(e){ return e.game===game; }).slice().sort(function(a,b){ return b.ts - a.ts; });
     if(rows.length === 0){ container.innerHTML = ''; return; }
     container.innerHTML = rows.map(function(e){
       return '<li>' +
@@ -671,8 +866,10 @@
   }
 
   function renderGame(game){
+    var win = getCurrentWeekWindow();
+    var weekRows = entriesForWindow(win, entries);
     var unit = { georankle:'Pkt', geodecide:'Ø Länder', geodle:'Ø Versuche', geoconnections:'Ø Fehler' }[game];
-    renderBoard(document.getElementById('board-'+game), gameBoard(game), unit);
+    renderBoard(document.getElementById('board-'+game), gameBoard(game, weekRows), unit);
     renderHistory(game);
   }
 
@@ -682,7 +879,6 @@
     GAMES.forEach(renderGame);
   }
 
-  /* ---------- messages ---------- */
   function showMsg(game, type, text){
     var slot = document.querySelector('.msg-slot[data-slot="'+game+'"]');
     slot.innerHTML = '<div class="msg '+type+'">'+escapeHtml(text)+'</div>';
@@ -694,7 +890,6 @@
     document.querySelector('.msg-slot[data-slot="'+game+'"]').innerHTML = '';
   }
 
-  /* ---------- file drop UI ---------- */
   function setupFileDrop(dropEl){
     var input = dropEl.querySelector('input[type=file]');
     var label = dropEl.querySelector('.fd-label');
@@ -728,9 +923,7 @@
   }
 
   function newId(){
-    if(window.crypto && typeof window.crypto.randomUUID === 'function'){
-      return window.crypto.randomUUID();
-    }
+    if(window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
       var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
       return v.toString(16);
@@ -743,13 +936,8 @@
     return result && result.data ? result.data.publicUrl : null;
   }
 
-  /* ---------- Supabase data ---------- */
   async function loadEntries(){
-    var result = await sb
-      .from('entries')
-      .select('id,game,player,played_on,raw,created_at,screenshot_path')
-      .order('created_at', { ascending: false });
-
+    var result = await sb.from('entries').select('id,game,player,played_on,raw,created_at,screenshot_path').order('created_at', { ascending: false });
     if(result.error) throw result.error;
 
     entries = (result.data || []).map(function(d){
@@ -768,30 +956,19 @@
   }
 
   function startRealtime(){
-    realtimeChannel = sb
-      .channel('geofratzen-entries')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'entries' },
-        function(){
-          loadEntries().catch(function(err){
-            console.error(err);
-            setBanner('Live-Aktualisierung fehlgeschlagen: ' + (err.message || err), true);
-          });
-        }
-      )
-      .subscribe(function(status){
-        if(status === 'SUBSCRIBED'){
-          setBanner('', false);
-        } else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
-          setBanner('Live-Verbindung unterbrochen. Die Seite versucht weiter zu synchronisieren.', true);
-        }
+    realtimeChannel = sb.channel('geofratzen-entries').on('postgres_changes', { event: '*', schema: 'public', table: 'entries' }, function(){
+      loadEntries().catch(function(err){
+        console.error(err);
+        setBanner('Live-Aktualisierung fehlgeschlagen: ' + (err.message || err), true);
       });
+    }).subscribe(function(status){
+      if(status === 'SUBSCRIBED') setBanner('', false);
+      else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setBanner('Live-Verbindung unterbrochen. Die Seite versucht weiter zu synchronisieren.', true);
+    });
   }
 
-  /* ---------- submit ---------- */
   async function handleSubmit(game, form){
     clearMsg(game);
-
     if(!backendReady || !sb){
       showMsg(game,'error','Die gemeinsame Datenbank ist noch nicht eingerichtet.');
       return;
@@ -810,17 +987,13 @@
       var pts = form.points.value;
       if(pts === ''){ showMsg(game,'error','Bitte die Punktzahl eingeben.'); return; }
       pts = Number(pts);
-      if(!Number.isFinite(pts) || pts < 0 || pts > 800 || Math.round(pts)!==pts){
-        showMsg(game,'error','Punkte müssen eine ganze Zahl zwischen 0 und 800 sein.'); return;
-      }
+      if(!Number.isFinite(pts) || pts < 0 || pts > 800 || Math.round(pts)!==pts){ showMsg(game,'error','Punkte müssen eine ganze Zahl zwischen 0 und 800 sein.'); return; }
       raw = { points: pts };
     } else if(game === 'geodecide'){
       var streak = form.streak.value;
       if(streak === ''){ showMsg(game,'error','Bitte die Länge der Serie eingeben.'); return; }
       streak = Number(streak);
-      if(!Number.isFinite(streak) || streak < 0 || Math.round(streak)!==streak){
-        showMsg(game,'error','Bitte eine gültige, nicht negative ganze Zahl eingeben.'); return;
-      }
+      if(!Number.isFinite(streak) || streak < 0 || Math.round(streak)!==streak){ showMsg(game,'error','Bitte eine gültige, nicht negative ganze Zahl eingeben.'); return; }
       raw = { streak: streak };
     } else if(game === 'geodle'){
       var guesses = form.guesses.value;
@@ -830,9 +1003,7 @@
       var mistakes = form.mistakes.value;
       if(mistakes === ''){ showMsg(game,'error','Bitte die Anzahl Fehlversuche eingeben.'); return; }
       mistakes = Number(mistakes);
-      if(!Number.isFinite(mistakes) || mistakes < 0 || Math.round(mistakes)!==mistakes){
-        showMsg(game,'error','Bitte eine gültige, nicht negative ganze Zahl eingeben.'); return;
-      }
+      if(!Number.isFinite(mistakes) || mistakes < 0 || Math.round(mistakes)!==mistakes){ showMsg(game,'error','Bitte eine gültige, nicht negative ganze Zahl eingeben.'); return; }
       raw = { mistakes: mistakes, solved: form.solved.checked };
     }
 
@@ -847,24 +1018,10 @@
 
     try{
       var blob = await fileToCompressedBlob(file);
-
-      var upload = await sb.storage
-        .from('screenshots')
-        .upload(path, blob, {
-          contentType: 'image/jpeg',
-          cacheControl: '3600',
-          upsert: false
-        });
+      var upload = await sb.storage.from('screenshots').upload(path, blob, { contentType:'image/jpeg', cacheControl:'3600', upsert:false });
       if(upload.error) throw upload.error;
 
-      var insert = await sb.from('entries').insert({
-        id: id,
-        game: game,
-        player: name,
-        played_on: date,
-        raw: raw,
-        screenshot_path: path
-      });
+      var insert = await sb.from('entries').insert({ id:id, game:game, player:name, played_on:date, raw:raw, screenshot_path:path });
       if(insert.error){
         await sb.storage.from('screenshots').remove([path]);
         throw insert.error;
@@ -875,10 +1032,7 @@
       if(game === 'geoconnections') form.solved.checked = true;
       resetFileDrop(form.querySelector('.file-drop'));
       showMsg(game,'success','Ergebnis gespeichert.');
-
-      // Sofort lokal aktualisieren; Realtime synchronisiert parallel alle Geräte.
       await loadEntries();
-
     }catch(err){
       console.error(err);
       showMsg(game,'error','Beim Speichern ist etwas schiefgelaufen: ' + (err && err.message ? err.message : 'unbekannter Fehler'));
@@ -888,7 +1042,6 @@
     }
   }
 
-  /* ---------- delete (double-tap confirm) ---------- */
   function handleDeleteClick(btn, id, path){
     if(btn.classList.contains('confirming')){
       clearTimeout(confirmTimers[id]);
@@ -908,7 +1061,6 @@
     try{
       var del = await sb.from('entries').delete().eq('id', id);
       if(del.error) throw del.error;
-
       if(path){
         var delFile = await sb.storage.from('screenshots').remove([path]);
         if(delFile.error) console.warn('Screenshot konnte nicht gelöscht werden:', delFile.error);
@@ -920,10 +1072,8 @@
     }
   }
 
-  /* ---------- screenshot modal ---------- */
   var modal = document.getElementById('modal');
   var modalContent = document.getElementById('modalContent');
-
   function openScreenshot(url){
     modal.classList.add('open');
     if(!url){
@@ -938,7 +1088,6 @@
   document.getElementById('modalClose').addEventListener('click', closeModal);
   modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
 
-  /* ---------- event delegation ---------- */
   document.getElementById('main').addEventListener('click', function(e){
     var viewBtn = e.target.closest('[data-view]');
     if(viewBtn){
@@ -955,7 +1104,6 @@
     }
   });
 
-  /* ---------- tabs ---------- */
   document.getElementById('tabNav').addEventListener('click', function(e){
     var btn = e.target.closest('button[data-tab]');
     if(!btn) return;
@@ -967,7 +1115,6 @@
     });
   });
 
-  /* ---------- forms init ---------- */
   function initForms(){
     GAMES.forEach(function(game){
       var form = document.getElementById('form-'+game);
@@ -980,17 +1127,14 @@
     });
   }
 
-  /* ---------- boot ---------- */
   async function boot(){
     initForms();
     setSubmitEnabled(false);
-
     if(configLooksUnset()){
       showConfigWarning();
       setBanner('Einmalige Supabase-Einrichtung fehlt noch.', true);
       return;
     }
-
     try{
       setBanner('Verbinde mit der gemeinsamen Rangliste …', false);
       initSupabase();
@@ -999,6 +1143,7 @@
       setSubmitEnabled(true);
       startRealtime();
       setBanner('', false);
+      setInterval(renderAll, 60000);
     }catch(err){
       console.error(err);
       backendReady = false;
@@ -1012,7 +1157,6 @@
   });
 
   boot();
-
 })();
 </script>
 </body>
